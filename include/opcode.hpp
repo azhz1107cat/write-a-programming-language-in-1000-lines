@@ -1,7 +1,6 @@
 /**
  * @file opcode.hpp
  * @brief 虚拟机指令集(VM Opcode)核心定义
- * 执行IR
  * @author azhz1107cat
  * @date 2025-10-25
  */
