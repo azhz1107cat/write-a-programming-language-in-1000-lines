@@ -8,8 +8,8 @@
 namespace kiz{
 
 struct VmState{
-    std::shared_ptr<model::Model> stack_top;
-    std::unordered_map<std::string, std::shared_ptr<Model>> locals;
+    model::Object* stack_top;
+    deps::HashMap<std::string, model::Object*> locals;
 }; 
 
 struct Instruction {
@@ -18,23 +18,24 @@ struct Instruction {
 };
 
 struct CallFrame {
-    std::unordered_map<std::string, std::shared_ptr<Model>> locals;
+    deps::HashMap<std::string, model::Object*> locals;
     size_t pc = 0;
     size_t return_to_pc;
     std::string name;
-    std::shared_ptr<model::CodeObject> code_object;
+    model::CodeObject* code_object;
 };
 
 class Vm {
 protect:
-    std::stack<std::shared_ptr<model::Model>> op_stack_;
-    std::vector<std::shared_ptr<model::Model>>   constant_pool;
+    std::stack<model::Object*> op_stack_;
+    std::vector<model::Object*> constant_pool;
     std::stack<std::unique_ptr<CallFrame>> call_stack_;
     size_t pc_;
     std::vector<Instruction> code_list;
     bool running = false;
 public:
-    void load(std::shared_ptr<model::Module> src_module);
+    void load(model::Module* src_module);
     VmState exec(Introduction introduction);
 };
+
 } // namespace kiz
