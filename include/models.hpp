@@ -10,6 +10,7 @@
 namespace model {
 
 class Object {
+    deps::HashMap<std::string, Object*> attrs;
     size_t refc_;
 public:
     void make_ref();
@@ -18,18 +19,18 @@ public:
 
 class CodeObject : public Object{
     std::vector<kiz::Introduction> code;
-    std::vector<std::shared_ptr<Object>> consts;
+    std::vector<Object*> consts;
 };
 
 class Module : public Object{
     std::string name;
-    std::shared_ptr<CodeObject> code;
-    std::unordered_map<std::string, std::shared_ptr<Object>> attrs;
+    CodeObject* code;
+    deps::HashMap<std::string, Object*> attrs;
 };
 
 class Function : public Object{
     std::string name;
-    std::shared_ptr<CodeObject> code;
+    CodeObject* code;
     size_t argc;
 };
 
@@ -45,7 +46,7 @@ class String : public Object {
 };
 
 class List : public Object{
-    std::vector<std::shared_ptr<Object>> val;
+    std::vector<Object*> val;
 };
 
 class Dictionary : public Object {
