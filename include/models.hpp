@@ -9,48 +9,50 @@
 
 namespace model {
 
-class Model {
+class Object {
     size_t refc_;
 public:
     void make_ref();
     void del_ref();
     };
 
-class CodeObject : public Model{
-    std::vector<my-lang::Introduction> code;
-    std::vector<std::shared_ptr<Model>> consts;
+class CodeObject : public Object{
+    std::vector<kiz::Introduction> code;
+    std::vector<std::shared_ptr<Object>> consts;
 };
 
-class Module : public Model{
+class Module : public Object{
     std::string name;
     std::shared_ptr<CodeObject> code;
-    std::unordered_map<std::string, std::shared_ptr<Model>> attrs;
+    std::unordered_map<std::string, std::shared_ptr<Object>> attrs;
 };
 
-class Function : public Model{
+class Function : public Object{
     std::string name;
     std::shared_ptr<CodeObject> code;
     size_t argc;
 };
 
-class Class : public Model{
-    std::string name;
-    std::vector<std::shared_ptr<Class>> parents;
-    std::unordered_map<std::string, std::shared_ptr<Model>> attrs;
+class Int : public Object{
+    deps::BigInt val;
 };
 
-class Instance : public Model{
-    std::shared_ptr<Class> ref_class;
-    std::unordered_map<std::string, std::shared_ptr<Model>> attrs;
+class Rational : public Object {
 };
 
-class Int : public Model{};
-class Dec : public Model {};
-class String : public Model {
+class String : public Object {
     std::string val;
 };
-class List : public Model{};
-class Dictionary : public Model {};
-class Bool : public Model {};
-class Nil : public Model{};
+
+class List : public Object{
+    std::vector<std::shared_ptr<Object>> val;
+};
+
+class Dictionary : public Object {
+
+};
+
+class Bool : public Object {};
+class Nil : public Object{};
+
 };
