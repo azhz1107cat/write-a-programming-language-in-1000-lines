@@ -18,7 +18,7 @@ public:
     };
 
 class CodeObject : public Object{
-    std::vector<kiz::Introduction> code;
+    std::vector<kiz::Instruction> code;
     std::vector<Object*> consts;
 };
 
