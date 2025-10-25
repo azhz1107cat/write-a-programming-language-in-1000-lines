@@ -1,0 +1,8 @@
+/**
+ * @file parser.hpp
+ * @brief 语法分析器（Parser）核心定义
+ * @author azhz1107cat
+ * @date 2025-10-25
+ */
+
+#pragma once  
