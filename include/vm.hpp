@@ -12,7 +12,7 @@ struct VmState{
     std::unordered_map<std::string, std::shared_ptr<Model>> locals;
 }; 
 
-struct Introduction {
+struct Instruction {
     Opcode opc;
     std::vector<size_t> opn_list;
 };
@@ -29,9 +29,9 @@ class Vm {
 protect:
     std::stack<std::shared_ptr<model::Model>> op_stack_;
     std::vector<std::shared_ptr<model::Model>>   constant_pool;
-    std::stack<std::shared_ptr<CallFrame>> call_stack_;
+    std::stack<std::unique_ptr<CallFrame>> call_stack_;
     size_t pc_;
-    std::vector<Introduction> code_list;
+    std::vector<Instruction> code_list;
     bool running = false;
 public:
     void load(std::shared_ptr<model::Module> src_module);
