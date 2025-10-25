@@ -5,7 +5,7 @@
  * @author azhz1107cat
  * @date 2025-10-25
  */
-namespace kaz{
+namespace kiz{
 
 struct VmState{
     std::shared_ptr<model::Model> stack_top;
@@ -36,5 +36,5 @@ protect:
 public:
     void load(std::shared_ptr<model::Module> src_module);
     VmState exec(Introduction introduction);
-    };
 };
+} // namespace kiz
