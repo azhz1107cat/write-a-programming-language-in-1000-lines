@@ -9,7 +9,6 @@
 namespace kiz {
 
 enum class Opcode {
-
     OP_ADD, OP_SUB, OP_MUL, OP_DIV
     OP_MOD, OP_POW, OP_NEG
     OP_EQ, OP_GT, OP_LT,
@@ -19,7 +18,8 @@ enum class Opcode {
     GET_ATTR, SET_ATTR,
     LOAD_VAR, LOAD_CONST,
     SET_GLOBAL, SET_LOCAL, SET_NONLOCAL,
-    JUMP, JUMP_IF_FALSE
+    JUMP, JUMP_IF_FALSE,
+    POP_TOP, SWAP, COPY_TOP
 };
 
 } // namespace kiz
