@@ -30,18 +30,18 @@ inline size_t hash_string(const std::string& key) {
 }
 
 // 模板类：键为std::string，值为任意类型T的HashMap
-template <typename T>
+template <typename KT, typename VT>
 class HashMap {
 private:
     // 嵌套桶节点结构体（存储键值对、哈希值、链表指针）
     struct StringBucket {
         std::string key;
-        T value;
+        VT value;
         size_t hash;                        // 缓存哈希值，避免重复计算
         std::shared_ptr<StringBucket> next; // 解决哈希冲突的链表指针
 
         // 构造函数（移动语义优化）
-        StringBucket(std::string k, T val)
+        StringBucket(std::string k, VT val)
             : key(std::move(k)),
               value(std::move(val)),
               hash(hash_string(key)),
@@ -90,7 +90,7 @@ public:
     }
 
     // 用键值对vector初始化
-    explicit HashMap(const std::vector<std::pair<std::string, T>>& vec) {
+    explicit HashMap(const std::vector<std::pair<std::string, VT>>& vec) {
         // 计算初始桶大小（确保负载因子不超过阈值）
         size_t init_size = 16;
         while (init_size < (vec.size() / load_factor_)) {
@@ -108,7 +108,7 @@ public:
     ~HashMap() = default;
 
     // 插入/更新键值对（存在则更新，不存在则插入）
-    T insert(const std::string& key, T val) {
+    VT insert(const std::string& key, VT val) {
         // 若桶为空，初始化桶大小为16
         if (buckets_.empty()) {
             buckets_.resize(16, nullptr);
@@ -127,7 +127,7 @@ public:
         while (current != nullptr) {
             if (current->hash == hash && current->key == key) {
                 current->value = std::move(val);
-                return T();  // 返回默认构造的T（对应原代码LAMINA_NULL）
+                return VT();  // 返回默认构造的T（对应原代码LAMINA_NULL）
             }
             current = current->next;
         }
@@ -138,7 +138,7 @@ public:
         buckets_[bucket_idx] = new_node;
         elem_count_++;
 
-        return T();  // 返回默认构造的T
+        return VT();  // 返回默认构造的T
     }
 
     // 递归查找键（支持查找父结构体__parent__）
@@ -160,7 +160,7 @@ public:
             return nullptr;
         }
         // 从T的data中提取HashMap指针（原代码依赖std::variant，需T的data为variant类型）
-        const auto parent_map_ptr = std::get_if<std::shared_ptr<HashMap<T>>>(&parent_node->value.data);
+        const auto parent_map_ptr = std::get_if<std::shared_ptr<HashMap<VT>>>(&parent_node->value.data);
         if (parent_map_ptr == nullptr || *parent_map_ptr == nullptr) {
             return nullptr;
         }
@@ -228,8 +228,8 @@ public:
     }
 
     // 转换为键值对vector
-    [[nodiscard]] std::vector<std::pair<std::string, T>> to_vector() const {
-        std::vector<std::pair<std::string, T>> vec;
+    [[nodiscard]] std::vector<std::pair<std::string, VT>> to_vector() const {
+        std::vector<std::pair<std::string, VT>> vec;
         for (const auto& bucket_head : buckets_) {
             auto current = bucket_head;
             while (current != nullptr) {
