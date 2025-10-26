@@ -36,7 +36,12 @@ class Vm {
     bool running = false;
 public:
     void load(model::Module* src_module);
-    VmState exec(Introduction introduction);
+    VmState exec(std::vector<Introduction> introduction);
+
+protect:
+    void eval_call();
+    void eval_set_member();
+    void eval_ret();
 };
 
 } // namespace kiz
