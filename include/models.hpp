@@ -20,6 +20,8 @@ public:
 class CodeObject : public Object{
     std::vector<kiz::Instruction> code;
     std::vector<Object*> consts;
+    std::vector<std::string> names;
+    std::vector<std::tuple<size_t, size_t>> lineno_map;
 };
 
 class Module : public Object{
