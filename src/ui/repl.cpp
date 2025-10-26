@@ -6,26 +6,23 @@
  * @date 2025-10-25
  */
 
-namespace ui{
 
-Repl::Repl() {
+ui::Repl::Repl() {
     // ToDo: ...
 }
 
-std::string Repl::read() {
+std::string ui::Repl::read() {
     // ToDo: ...
 }
 
-void Repl::loop() {
+void ui::Repl::loop() {
     // ToDo: ...
 }
 
-void Repl::eval_and_print() {
+void ui::Repl::eval_and_print() {
     // ToDo: ...
 }
 
-void Repl::~Repl() {
+void ui::Repl::~Repl() {
     // ToDo: ...
 }
-
-} // namespace ui
