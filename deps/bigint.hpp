@@ -50,6 +50,54 @@ private:
         return false; // 绝对值相等
     }
 
+    BigInt abs() const {
+        BigInt res = *this;
+        res.is_negative_ = false;
+        return res;
+    }
+
+    /**
+     * @brief 核心辅助：计算 (dividend / divisor) 的商和余数（无符号，仅处理正整数）
+     * @param dividend 被除数（非负）
+     * @param divisor 除数（正，非零）
+     * @return  pair<商, 余数>（均非负）
+     */
+    static std::pair<BigInt, BigInt> div_mod_unsigned(const BigInt& dividend, const BigInt& divisor) {
+        BigInt quotient, remainder;
+        quotient.digits_.clear();
+        remainder.digits_.clear();
+        remainder.is_negative_ = false;
+        quotient.is_negative_ = false;
+
+        // 从被除数最高位（digits_末尾）开始逐位构建余数
+        for (auto it = dividend.digits_.rbegin(); it != dividend.digits_.rend(); ++it) {
+            // 余数 = 余数 * 10 + 当前位（模拟手工除法）
+            remainder = remainder * BigInt(10) + BigInt(static_cast<size_t>(*it));
+
+            // 计算当前位商：找到最大的k使 k*divisor <= remainder
+            uint8_t q_digit = 0;
+            BigInt temp = divisor;
+            while (temp <= remainder) {
+                q_digit++;
+                temp += divisor;
+            }
+
+            // 商的当前位存入（注意商是正序构建，后续需逆序）
+            quotient.digits_.push_back(q_digit);
+            // 更新余数：remainder = remainder - (q_digit * divisor)
+            if (q_digit > 0) {
+                remainder -= (divisor * BigInt(static_cast<size_t>(q_digit)));
+            }
+        }
+
+        // 商是正序存储（高位在前），需逆转为统一的低位在前格式
+        std::reverse(quotient.digits_.begin(), quotient.digits_.end());
+        quotient.trim_leading_zeros();
+        remainder.trim_leading_zeros();
+
+        return {quotient, remainder};
+    }
+
     /**
      * @brief Karatsuba乘法核心（无符号，仅处理正整数）
      * 时间复杂度 O(n^log3) ≈ O(n^1.58)，远快于普通O(n²)逐位乘
@@ -294,6 +342,43 @@ public:
         return *this;
     }
 
+    // ========================= 核心运算：取模 =========================
+    /**
+     * @brief 取模运算符：a mod b
+     * 规则：1. 除数b不能为0（断言报错）；2. 结果符号与被除数a一致；3. 0 ≤ |结果| < |b|
+     */
+    BigInt operator%(const BigInt& other) const {
+        // 断言：除数不能为0
+        assert(!(other.digits_.size() == 1 && other.digits_[0] == 0) && "BigInt mod: divisor cannot be zero");
+
+        // 特殊情况：被除数为0→结果为0
+        if (digits_.size() == 1 && digits_[0] == 0) {
+            return BigInt(0);
+        }
+
+        // 计算被除数、除数的绝对值
+        BigInt a_abs = this->abs();
+        BigInt b_abs = other.abs();
+
+        // 无符号取模（得到非负余数）
+        BigInt remainder = div_mod_unsigned(a_abs, b_abs).second;
+
+        // 调整余数符号（与被除数一致）
+        if (this->is_negative_ && remainder != BigInt(0)) {
+            remainder = remainder - b_abs; // 非零负余数：remainder = - (b_abs - remainder)
+        }
+
+        remainder.trim_leading_zeros();
+        return remainder;
+    }
+
+    /**
+     * @brief 取模赋值运算符：a %= b → a = a mod b
+     */
+    BigInt& operator%=(const BigInt& other) {
+        *this = *this % other;
+        return *this;
+    }
 
     // ========================= 输出运算符（同前） =========================
     friend std::ostream& operator<<(std::ostream& os, const BigInt& num) {
@@ -312,23 +397,38 @@ public:
 /*
 #include <iostream>
 int main() {
-    // 1. 初始化测试
+    // 初始化测试
     BigInt a("123456789012345678901234567890"); // 大正数
     BigInt b(-987654321);                        // 负数（size_t初始化后改符号，或直接字符串"-987654321"）
     BigInt c(123);                               // size_t初始化
 
-    // 2. 加法测试
+    // 加法测试
     BigInt add_res = a + c;
     std::cout << "a + c = " << add_res << std::endl; // 123456789012345678901234567890 + 123 = 123456789012345678901234568013
 
-    // 3. 减法测试
+    // 减法测试
     BigInt sub_res = a - b;
     std::cout << "a - b = " << sub_res << std::endl; // 123456789012345678901234567890 - (-987654321) = 123456789012345678901234568877
 
-    // 4. 乘法测试（大数字高效计算）
+    // 乘法测试（大数字高效计算）
     BigInt mul_res = a * c;
     std::cout << "a * c = " << mul_res << std::endl; // 123456789012345678901234567890 * 123 = 15185185048518518504851851850470
 
+    // 取模测试（重点验证符号规则）
+    BigInt mod1 = a % c;                // 12345678901234567890 mod 100 → 90（正）
+    BigInt mod2 = b % c;                // -789 mod 100 → -89（与被除数同号）
+    BigInt mod3 = a % b;                // 12345678901234567890 mod (-789) → 36（与被除数同号）
+    BigInt mod4 = d % c;                // 0 mod 100 → 0
+
+    // 输出结果
+    std::cout << "a = " << a << std::endl;
+    std::cout << "b = " << b << std::endl;
+    std::cout << "a % c = " << mod1 << std::endl;  // 输出：90
+    std::cout << "b % c = " << mod2 << std::endl;  // 输出：-89
+    std::cout << "a % b = " << mod3 << std::endl;  // 输出：36
+    std::cout << "d % c = " << mod4 << std::endl;  // 输出：0
+
+   
     return 0;
 }
 */
