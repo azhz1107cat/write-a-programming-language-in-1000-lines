@@ -81,28 +81,116 @@ std::unique_ptr<Expression> kiz::Parser::parse_unary() {
 }
 
 std::unique_ptr<Expression> kiz::Parser::parse_factor() {
-    auto node = parse_a_token();
+    auto node = parse_primary();
 
     while (true) {
-        if (curr_token().type == kiz::TokenType::ExclamationMark) {
-            skip_token("!");
-            node = std::make_unique<UnaryExpr>("!", std::move(node));
-        }
         if (curr_token().type == kiz::TokenType::Dot) {
-            node = parse_get_member(std::move(node));
-        }
-        else if (curr_token().type == kiz::TokenType::DoubleColon) {
-            node = parse_namespace_get_member(std::move(node));
+            skip_token(".");
+            auto child = std::make_unique<IdentifierExpr>(skip_token().text);
+            node = std::make_unique<GetMemberExpr>(std::move(node),std::move(child));
+
         }
         else if (curr_token().type == kiz::TokenType::LBracket) {
-            node = parse_get_item(std::move(node));
+            skip_token("[");
+            auto param = parse_params(kiz::TokenType::RBracket);
+            skip_token("]");
+            node = std::make_unique<GetItemExpr>(std::move(node),std::move(param));
         }
         else if (curr_token().type == kiz::TokenType::LParen) {
-            node = parse_func_call(std::move(node));
+            skip_token("(");
+            auto param = parse_params(kiz::TokenType::RParen);
+            skip_token(")");
+            node = std::make_unique<CallExpr>(std::move(node),std::move(param));
         }
-        else {
-            break;
-        }
+        else break;
     }
     return node;
+}
+
+std::unique_ptr<Expression> kiz::Parser::parse_primary() {
+    const auto tok = skip_token();
+    if (tok.type == kiz::TokenType::Number) {
+        return std::make_unique<LiteralExpr>(tok.text);
+    }
+    if (tok.type == kiz::TokenType::String) {
+        return std::make_unique<LiteralExpr>(tok.text);
+    }
+    if (tok.type == kiz::TokenType::Null) {
+        return std::make_unique<LiteralExpr>(tok.text, Value::Type::Null);
+    }
+    if (tok.type == kiz::TokenType::True) {
+        return std::make_unique<LiteralExpr>(tok.text, Value::Type::Bool);
+    }
+    if (tok.type == kiz::TokenType::False) {
+        return std::make_unique<LiteralExpr>(tok.text, Value::Type::Bool);
+    }
+    if (tok.type == kiz::TokenType::Identifier) {
+        return std::make_unique<IdentifierExpr>(tok.text);
+    }
+    if (tok.type == kiz::TokenType::Lambda) {
+        std::vector<std::string> params{};
+        if (curr_token().type == kiz::TokenType::Pipe) {
+            skip_token("|");
+            while (curr_token().type != kiz::TokenType::Pipe) {
+                params.emplace_back(skip_token().text);
+                if (curr_token().type == kiz::TokenType::Comma) skip_token(",");
+            }
+            skip_token("|");
+        }
+
+        skip_token("{");
+        auto stmt = parse_block(true);
+        skip_token("}");
+        return std::make_unique<LambdaDeclExpr>("<lambda>", std::move(params),std::move(stmt));
+    }
+    if (tok.type == kiz::TokenType::Pipe) {
+        std::vector<std::string> params;
+        while (curr_token().type != kiz::TokenType::Pipe) {
+            params.emplace_back(skip_token().text);
+            if (curr_token().type == kiz::TokenType::Comma) skip_token(",");
+        }
+        skip_token("|");
+        auto expr = parse_expression();
+        std::vector<std::unique_ptr<Statement>> stmts;
+        stmts.emplace_back(std::make_unique<ReturnStmt>(std::move(expr)));
+
+        return std::make_unique<LambdaDeclExpr>(
+            "lambda",
+            std::move(params),
+            std::make_unique<BlockStmt>(std::move(stmts))
+        );
+    }
+    if (tok.type == kiz::TokenType::LBrace) {
+        std::vector<std::pair<std::string, std::unique_ptr<Expression>>> init_vec{};
+        while (curr_token().type != kiz::TokenType::RBrace) {
+            auto key = skip_token().text;
+            skip_token("=");
+            auto val = parse_expression();
+            if (curr_token().type == kiz::TokenType::Comma) skip_token(",");
+            if (curr_token().type == kiz::TokenType::Semicolon) skip_token(";");
+            init_vec.emplace_back(std::move(key), std::move(val));
+        }
+        skip_token("}");
+        return std::make_unique<LambdaStructDeclExpr>(std::move(init_vec));
+    }
+    if (tok.type == kiz::TokenType::LBracket) {
+        auto param = parse_params(kiz::TokenType::RBracket);
+        skip_token("]");
+        return std::make_unique<ArrayExpr>(std::move(param));
+    }
+    if (tok.type == kiz::TokenType::LParen) {
+        auto expr = parse_expression();
+        skip_token(")");
+        return expr;
+    }
+    return nullptr;
+}
+
+std::vector<std::unique_ptr<Expression>> kiz::Parser::parse_params(const kiz::TokenType endswith){
+    std::vector<std::unique_ptr<Expression>> params;
+    while (curr_token().type != endswith) {
+        params.emplace_back(parse_expression());
+        if (curr_token().type == kiz::TokenType::Comma) skip_token(",");
+    }
+    return params;
 }
