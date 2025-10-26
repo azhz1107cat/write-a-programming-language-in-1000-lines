@@ -21,12 +21,12 @@ namespace util {
 inline std::unordered_map<std::string, std::string> opened_files; 
 
 // 获取切片
-inline std::string get_slice(const std::string& src_path, const int& src_line_start, const int& src_line_end);
+std::string get_slice(const std::string& src_path, const int& src_line_start, const int& src_line_end);
 
 // 获取opened_files中的文件(线程安全)
 std::string get_file_by_path(const std::string& path);
 
 // 打开kiz文件并将其添加到opened_files, 返回文件内容
-std::string open_kiz_file(const std::string& path);
+std::string open_new_kiz_file(const std::string& path);
 
 } // namespace util
