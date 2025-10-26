@@ -24,7 +24,7 @@ public:
     void gen_mod();
     void gen_expr();
     void gen_fn_call();
-    void gen_dict()
+    void gen_dict();
     void gen_fn_decl();
     void gen_if();
     void gen_while();
