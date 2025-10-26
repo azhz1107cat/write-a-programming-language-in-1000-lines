@@ -30,7 +30,7 @@ public:
     void gen_while();
     void gen_literal();
 
-protect:
+protected:
     model::CodeObject* make_code_obj();
     model::Int* make_int_obj();
     model::Dec* make_dec_obj();
