@@ -20,7 +20,7 @@ void util::error_reporter(
     const int& src_line_end,
     const int& src_col_start,
     const int& src_col_end,
-    const ErrorInfo& error
+    const util::ErrorInfo& error
 ) {
     // 获取错误位置的代码
     std::string error_line = get_slice(src_path, src_line_start, src_line_end);
