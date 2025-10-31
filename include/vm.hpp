@@ -18,6 +18,7 @@ struct Instruction {
 };
 
 struct CallFrame {
+    bool is_week_scope;
     deps::HashMap<std::string, model::Object*> locals;
     size_t pc = 0;
     size_t return_to_pc;
@@ -37,7 +38,7 @@ class Vm {
 
 public:
     void load(model::Module* src_module);
-    VmState exec(std::vector<Introduction> introduction);
+    VmState exec(Introduction introduction);
 
 protected:
     void eval_call();
