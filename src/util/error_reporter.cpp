@@ -1,4 +1,9 @@
-
+/**
+ * @file error_reporter.cpp
+ * @brief 错误报告器（Error Reporter）核心实现
+ * kiz错误报告器
+ * @author azhz1107cat
+ */
 
 std::string util::generate_separator(const int col_start, const int col_end, const int line_end) {
     std::stringstream ss;
