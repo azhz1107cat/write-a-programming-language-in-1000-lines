@@ -10,6 +10,8 @@ if else while break next
 
 fn end dict import
 
+try catch throw
+
 nonlocal global
 
 is not or in and 
