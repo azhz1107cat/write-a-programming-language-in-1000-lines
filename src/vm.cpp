@@ -514,10 +514,10 @@ VmState Vm::exec(Instruction instruction) {
                 std::assert(false && "LOAD_CONST: 无常量索引");
             }
             size_t const_idx = instruction.opn_list[0];
-            if (const_idx >= constant_pool.size()) {
+            if (const_idx >= constant_pool_.size()) {
                 std::assert(false && "LOAD_CONST: 常量索引超出范围");
             }
-            model::Object* const_val = constant_pool[const_idx];
+            model::Object* const_val = constant_pool_[const_idx];
             const_val->make_ref();
             op_stack_.push(const_val);
             break;
@@ -619,7 +619,7 @@ VmState Vm::exec(Instruction instruction) {
                 std::assert(false && "JUMP: 无目标pc索引");
             }
             size_t target_pc = instruction.opn_list[0];
-            if (target_pc >= code_list.size()) {
+            if (target_pc >= code_list_.size()) {
                 std::assert(false && "JUMP: 目标pc超出字节码范围");
             }
             pc_ = target_pc;  // 直接修改程序计数器
@@ -647,7 +647,7 @@ VmState Vm::exec(Instruction instruction) {
             }
 
             if (need_jump) {
-                if (target_pc >= code_list.size()) {
+                if (target_pc >= code_list_.size()) {
                     std::assert(false && "JUMP_IF_FALSE: 目标pc超出范围");
                 }
                 pc_ = target_pc;
