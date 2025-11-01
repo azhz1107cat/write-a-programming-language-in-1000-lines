@@ -13,7 +13,7 @@ void kiz::Vm::load(model::Module* src_module) {
 #include <cassert>
 #include <algorithm>
 
-VmState Vm::exec(Instruction instruction) {  // 修正：Introduction → Instruction
+VmState Vm::exec(Instruction instruction) { 
     switch (instruction.opc) {
 
         case Opcode::OP_ADD: {
