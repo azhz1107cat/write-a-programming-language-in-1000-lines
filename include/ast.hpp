@@ -10,12 +10,30 @@
 
 namespace kiz {
 
+enum class AstType {
+    // 表达式类型（对应 Expression 子类）
+    StringExpr, NumberExpr, ArrayExpr, IdentifierExpr,
+    BinaryExpr, UnaryExpr,
+    CallExpr,
+    GetMemberExpr, SetMemberExpr, GetItemExpr,
+    LambdaDeclExpr, DictDeclExpr,
+
+    // 语句类型（对应 Statement 子类）
+    VarDeclStmt, AssignStmt,
+    BlockStmt, IfStmt, WhileStmt, FuncDefStmt,
+    ReturnStmt, ImportStmt,
+    NullStmt, ExprStmt,
+    BreakStmt, ContinueStmt
+};
+
 // AST 基类
 struct ASTNode {
     int start_ln = 0;
     int end_ln = 0;
     int start_col = 0;
     int end_col = 0;
+    AstType ast_type;
+    
     virtual ~ASTNode() = default;
 };
 
@@ -27,9 +45,6 @@ struct TypeInfo {
         : type_name(std::move(tn)), subs(std::move(s)) {}
 };
 
-enum class AstType {
-    
-};
 
 // 表达式基类
 struct Expression :  ASTNode {
