@@ -44,6 +44,23 @@ void Vm::load(model::Module* src_module) {
     // 初始化VM执行状态：标记为"就绪"
     this->pc_ = 0;         // 全局PC同步为调用帧初始PC
     this->running_ = true; // 标记VM为运行状态（等待exec触发执行）
+    assert(!this->call_stack_.empty() && "Vm::load: 调用栈为空，无法执行指令");
+    auto& curr_frame = *this->call_stack_.top(); // 获取当前模块的调用帧（栈顶）
+    assert(curr_frame.code_object != nullptr && "Vm::load: 当前调用帧无关联CodeObject");
+
+    // 循环执行当前调用帧下的所有指令（依赖已实现的exec单条指令逻辑）
+    const std::vector<Instruction>& frame_instructions = curr_frame.code_object->code;
+    while (curr_frame.pc < frame_instructions.size()) {
+        // 获取当前要执行的指令（用调用帧的pc索引，确保上下文正确）
+        const Instruction& curr_inst = frame_instructions[curr_frame.pc];
+        // 调用已实现的exec执行单条指令
+        this->exec(curr_inst);
+        // 指令执行完成后，更新当前调用帧的pc（指向下一条指令）
+        curr_frame.pc++;
+    }
+
+    // 模块指令执行完毕，标记VM为非运行状态
+    this->running_ = false;
 }
 
 VmState Vm::exec(Instruction instruction) { 
