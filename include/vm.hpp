@@ -30,20 +30,15 @@ struct CallFrame {
 
 class Vm {
     std::stack<model::Object*> op_stack_;
-    std::vector<model::Object*> constant_pool;
+    std::vector<model::Object*> constant_pool_;
     std::stack<std::unique_ptr<CallFrame>> call_stack_;
     size_t pc_;
-    std::vector<Instruction> code_list;
-    bool running = false;
+    std::vector<Instruction> code_list_;
+    bool running_ = false;
 
 public:
     void load(model::Module* src_module);
     VmState exec(Introduction introduction);
-
-protected:
-    void eval_call();
-    void eval_set_member();
-    void eval_ret();
 };
 
 } // namespace kiz
