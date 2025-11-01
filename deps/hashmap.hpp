@@ -30,7 +30,7 @@ inline size_t hash_string(const std::string& key) {
 }
 
 // 模板类：键为std::string，值为任意类型T的HashMap
-template <typename KT, typename VT>
+template <typename VT>
 class HashMap {
 private:
     // 嵌套桶节点结构体（存储键值对、哈希值、链表指针）
