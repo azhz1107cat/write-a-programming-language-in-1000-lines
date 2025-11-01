@@ -355,6 +355,7 @@ VmState Vm::exec(Instruction instruction) {
             if (op_stack_.size() < 2) {
                 std::assert(false && "OP_IN: 操作数栈元素不足（需≥2）");
             }
+            // ToDo:...
             break;
         }
 
@@ -432,10 +433,56 @@ VmState Vm::exec(Instruction instruction) {
         }
 
         case Opcode::GET_ATTR: {
+            // 栈顶：对象；opn_list[0]：属性名在names中的索引
+            if (op_stack_.empty() || instruction.opn_list.empty()) {
+                std::assert(false && "GET_ATTR: 操作数栈为空或无属性名索引");
+            }
+            model::Object* obj = op_stack_.top();
+            op_stack_.pop();
+            size_t name_idx = instruction.opn_list[0];
+            CallFrame* curr_frame = call_stack_.top().get();
+
+            // 校验属性名索引
+            if (name_idx >= curr_frame->names.size()) {
+                std::assert(false && "GET_ATTR: 属性名索引超出范围");
+            }
+            std::string attr_name = curr_frame->names[name_idx];
+
+            // 从对象的attrs中查找属性
+            auto attr_it = obj->attrs.find(attr_name);
+            if (attr_it == obj->attrs.end()) {
+                std::assert(false && "GET_ATTR: 对象无此属性");
+            }
+            model::Object* attr_val = attr_it->second;
+            attr_val->make_ref();
+            op_stack_.push(attr_val);
             break;
         }
 
         case Opcode::SET_ATTR: {
+            // 栈顶：属性值；栈顶下：对象；opn_list[0]：属性名索引
+            if (op_stack_.size() < 2 || instruction.opn_list.empty()) {
+                std::assert(false && "SET_ATTR: 操作数栈元素不足或无属性名索引");
+            }
+            model::Object* attr_val = op_stack_.top();
+            op_stack_.pop();
+            model::Object* obj = op_stack_.top();
+            op_stack_.pop();
+            size_t name_idx = instruction.opn_list[0];
+            CallFrame* curr_frame = call_stack_.top().get();
+
+            if (name_idx >= curr_frame->names.size()) {
+                std::assert(false && "SET_ATTR: 属性名索引超出范围");
+            }
+            std::string attr_name = curr_frame->names[name_idx];
+
+            // 更新属性（旧值减引用，新值加引用）
+            auto attr_it = obj->attrs.find(attr_name);
+            if (attr_it != obj->attrs.end()) {
+                attr_it->second->del_ref();  // 释放旧值引用
+            }
+            attr_val->make_ref();
+            obj->attrs[attr_name] = attr_val;
             break;
         }
 
@@ -567,7 +614,6 @@ VmState Vm::exec(Instruction instruction) {
             break;
         }
 
-        // -------------------------- 控制流指令（修改程序计数器pc_） --------------------------
         case Opcode::JUMP: {
             // 无条件跳转到opn_list[0]指定的pc
             if (instruction.opn_list.empty()) {
