@@ -6,12 +6,45 @@
  * @date 2025-10-25
  */
 
-void kiz::Vm::load(model::Module* src_module) {
-
-}
-
 #include <cassert>
 #include <algorithm>
+
+namespace kiz {
+
+void Vm::load(model::Module* src_module) {
+    // 合法性校验：防止空指针访问
+    assert(src_module != nullptr && "Vm::load: 传入的src_module不能为nullptr");
+    assert(src_module->code != nullptr && "Vm::load: 模块的CodeObject未初始化（code为nullptr）");
+
+    // 加载指令列表：将模块CodeObject中的指令复制到VM的执行指令池
+    this->code_list_ = src_module->code->code;
+
+    // 加载常量池：处理引用计数，避免常量对象被提前释放
+    const std::vector<model::Object*>& module_consts = src_module->code->consts;
+    for (model::Object* const_obj : module_consts) {
+        assert(const_obj != nullptr && "Vm::load: 常量池中有nullptr对象，非法");
+        const_obj->make_ref(); // 增加引用计数（VM持有常量的引用）
+        this->constant_pool_.push_back(const_obj);
+    }
+
+    // 创建模块级调用帧（CallFrame）：模块是顶层执行单元，对应一个顶层调用帧
+    auto module_call_frame = std::make_unique<CallFrame>();
+    module_call_frame->is_week_scope = false;          // 模块作用域为"强作用域"（非弱作用域）
+    module_call_frame->locals = deps::HashMap<std::string, model::Object*>(); // 初始空局部变量表
+    module_call_frame->pc = 0;                         // 程序计数器初始化为0（从第一条指令开始执行）
+    module_call_frame->return_to_pc = this->code_list_.size(); // 执行完所有指令后返回的位置（指令池末尾）
+    module_call_frame->name = src_module->name;        // 调用帧名称与模块名一致（便于调试）
+    module_call_frame->code_object = src_module->code; // 关联当前模块的CodeObject
+    module_call_frame->curr_lineno_map = src_module->code->lineno_map; // 复制行号映射（用于错误定位）
+    module_call_frame->names = src_module->code->names; // 复制变量名列表（指令操作数索引对应此列表）
+
+    // 将调用帧压入VM的调用栈
+    this->call_stack_.push(std::move(module_call_frame));
+
+    // 初始化VM执行状态：标记为"就绪"
+    this->pc_ = 0;         // 全局PC同步为调用帧初始PC
+    this->running_ = true; // 标记VM为运行状态（等待exec触发执行）
+}
 
 VmState Vm::exec(Instruction instruction) { 
     switch (instruction.opc) {
@@ -711,3 +744,5 @@ VmState Vm::exec(Instruction instruction) {
         : call_stack_.top()->locals;
     return state;
 }
+
+} // namespace kiz
