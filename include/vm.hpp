@@ -9,7 +9,7 @@ namespace kiz{
 
 struct VmState{
     model::Object* stack_top;
-    deps::HashMap<std::string, model::Object*> locals;
+    deps::HashMap<model::Object*> locals;
 }; 
 
 struct Instruction {
@@ -19,7 +19,7 @@ struct Instruction {
 
 struct CallFrame {
     bool is_week_scope;
-    deps::HashMap<std::string, model::Object*> locals;
+    deps::HashMap<model::Object*> locals;
     size_t pc = 0;
     size_t return_to_pc;
     std::string name;
