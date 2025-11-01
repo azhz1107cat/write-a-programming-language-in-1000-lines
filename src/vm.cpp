@@ -89,14 +89,28 @@ VmState kiz::Vm::exec(kiz::Introduction introduction) {
         case Opcode::JUMP_IF_FALSE:
             break;
 
-        case Opcode::POP_TOP:
+        case Opcode::POP_TOP: {
+            if( !op_stack.empty() ) {
+                op_stack.pop();
+            } else {
+                std::assert(false);
+            }
             break;
+        }
 
-        case Opcode::SWAP:
+        case Opcode::SWAP: {
             break;
+        }
 
-        case Opcode::COPY_TOP:
+        case Opcode::COPY_TOP: {
+            if( !op_stack.empty() ) {
+                auto a = op_stack.top();
+                op_stack.emplace(a);
+            } else {
+                std::assert(false);
+            }
             break;
+        }
 
         default:
             break;
