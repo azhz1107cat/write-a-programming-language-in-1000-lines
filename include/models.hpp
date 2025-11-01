@@ -10,7 +10,7 @@
 namespace model {
 
 class Object {
-    deps::HashMap<std::string, Object*> attrs;
+    deps::HashMap<Object*> attrs;
     size_t refc_;
 public:
     void make_ref();
@@ -27,7 +27,7 @@ class CodeObject : public Object{
 class Module : public Object{
     std::string name;
     CodeObject* code;
-    deps::HashMap<std::string, Object*> attrs;
+    deps::HashMap<Object*> attrs;
 };
 
 class Function : public Object{
