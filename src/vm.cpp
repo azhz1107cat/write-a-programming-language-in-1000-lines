@@ -15,7 +15,6 @@ void kiz::Vm::load(model::Module* src_module) {
 
 VmState Vm::exec(Instruction instruction) { 
     switch (instruction.opc) {
-
         case Opcode::OP_ADD: {
             // 二元运算：至少需要2个操作数
             if (op_stack_.size() < 2) {
@@ -656,6 +655,10 @@ VmState Vm::exec(Instruction instruction) {
             break;
         }
 
+        case Opcode::THROW: {
+            break;
+        }
+
         case Opcode::POP_TOP: {
             if (!op_stack_.empty()) {
                 model::Object* top = op_stack_.top();
@@ -707,16 +710,4 @@ VmState Vm::exec(Instruction instruction) {
         ? deps::HashMap<std::string, model::Object*>() 
         : call_stack_.top()->locals;
     return state;
-}
-
-void kiz::Vm::eval_call() {
-
-}
-
-void kiz::Vm::eval_set_member() {
-
-}
-
-void kiz::Vm::eval_ret() {
-
 }
