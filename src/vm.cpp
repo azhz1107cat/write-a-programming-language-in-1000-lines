@@ -30,7 +30,7 @@ void Vm::load(model::Module* src_module) {
     // 创建模块级调用帧（CallFrame）：模块是顶层执行单元，对应一个顶层调用帧
     auto module_call_frame = std::make_unique<CallFrame>();
     module_call_frame->is_week_scope = false;          // 模块作用域为"强作用域"（非弱作用域）
-    module_call_frame->locals = deps::HashMap<std::string, model::Object*>(); // 初始空局部变量表
+    module_call_frame->locals = deps::HashMap<model::Object*>(); // 初始空局部变量表
     module_call_frame->pc = 0;                         // 程序计数器初始化为0（从第一条指令开始执行）
     module_call_frame->return_to_pc = this->code_list_.size(); // 执行完所有指令后返回的位置（指令池末尾）
     module_call_frame->name = src_module->name;        // 调用帧名称与模块名一致（便于调试）
@@ -757,7 +757,7 @@ VmState Vm::exec(Instruction instruction) {
     state.stack_top = op_stack_.empty() ? nullptr : op_stack_.top();
     // 局部变量：当前调用帧的locals，无调用帧则为空
     state.locals = call_stack_.empty() 
-        ? deps::HashMap<std::string, model::Object*>() 
+        ? deps::HashMap<model::Object*>() 
         : call_stack_.top()->locals;
     return state;
 }
