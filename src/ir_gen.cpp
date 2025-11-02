@@ -162,9 +162,6 @@ model::Module* IRGenerator::gen() {
     return mod;
 }
 
-void IRGenerator::gen_mod(BlockStmt* root_block) {
-    // ToDo: ...
-}
 
 void IRGenerator::gen_expr(Expression* expr) {
     assert(expr && "gen_expr: 表达式节点为空");
