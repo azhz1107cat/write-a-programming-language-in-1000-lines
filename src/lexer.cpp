@@ -95,7 +95,7 @@ void Lexer::handle_initial_state() {
 
     char c = (*src_)[idx_];
     switch (true) {
-        // 1. 进入标识符/关键字态：字母或下划线开头
+        // 进入标识符/关键字态：字母或下划线开头
         case (std::isalpha(c) || c == '_'):
             token_buf_.push_back(c);
             token_line_start_ = line_;
@@ -105,7 +105,7 @@ void Lexer::handle_initial_state() {
             transition(LexerState::Identifier);
             break;
 
-        // 2. 进入数字态：数字或小数点开头（小数点后需有数字）
+        // 进入数字态：数字或小数点开头（小数点后需有数字）
         case (std::isdigit(c) || (c == '.' && std::isdigit(peek()))):
             token_buf_.push_back(c);
             token_line_start_ = line_;
@@ -115,7 +115,7 @@ void Lexer::handle_initial_state() {
             transition(LexerState::Number);
             break;
 
-        // 3. 进入字符串态：单/双引号
+        // 进入字符串态：单/双引号
         case (c == '"' || c == '\''):
             token_buf_.clear(); // 字符串内容不含引号，仅缓存字符
             token_line_start_ = line_;
@@ -125,7 +125,7 @@ void Lexer::handle_initial_state() {
             transition(LexerState::String);
             break;
 
-        // 4. 进入运算符态：可能是多字符运算符（=, !, <, >, -, | 等）
+        // 进入运算符态：可能是多字符运算符（=, !, <, >, -, | 等）
         case (c == '=' || c == '!' || c == '<' || c == '>' || c == '-' || 
               c == '+' || c == '*' || c == '/' || c == '%' || c == '^' || 
               c == '|' || c == '.'):
@@ -137,7 +137,7 @@ void Lexer::handle_initial_state() {
             transition(LexerState::Operator);
             break;
 
-        // 5. 进入注释态：// 或 /*
+        // 进入注释态：// 或 /*
         case (c == '/' && peek() == '/'):
             idx_ += 2;
             col_ += 2;
@@ -149,7 +149,7 @@ void Lexer::handle_initial_state() {
             transition(LexerState::CommentBlock);
             break;
 
-        // 6. 单字符分隔符：直接生成 Token
+        // 单字符分隔符：直接生成 Token
         case (c == '('):
             token_buf_ = "(";
             emit_token(TokenType::LParen);
@@ -169,14 +169,6 @@ void Lexer::handle_initial_state() {
             col_++;
             break;
         case (c == '}'):
-            // 原逻辑：} 前补分号（非 ;, 结尾时）
-            if (!tokens_.empty()) {
-                TokenType last_type = tokens_.back().type;
-                if (last_type != TokenType::Semicolon && last_type != TokenType::Comma) {
-                    token_buf_ = ";";
-                    emit_token(TokenType::Semicolon);
-                }
-            }
             token_buf_ = "}";
             emit_token(TokenType::RBrace);
             idx_++;
@@ -213,7 +205,7 @@ void Lexer::handle_initial_state() {
             col_++;
             break;
 
-        // 7. 换行符：生成 EndOfLine
+        // 换行符：生成 EndOfLine
         case (c == '\n'):
             // 原逻辑：若最后是反斜杠，移除反斜杠不生成 EOL
             if (!tokens_.empty() && tokens_.back().type == TokenType::Backslash) {
@@ -227,7 +219,7 @@ void Lexer::handle_initial_state() {
             col_ = 1;
             break;
 
-        // 8. 未知字符
+        // 未知字符
         default:
             token_buf_ = std::string(1, c);
             transition(LexerState::Unknown);
@@ -385,7 +377,7 @@ void Lexer::handle_number_exp_sign_state() {
 void Lexer::handle_string_state() {
     if (idx_ >= src_->size()) {
         // 到达 EOF：未闭合字符串，抛错
-        throw std::runtime_error("Unterminated string at line " + std::to_string(line_));
+        std::assert(false && "Unterminated string at line " + std::to_string(line_));
     }
 
     char c = (*src_)[idx_];
@@ -528,7 +520,7 @@ void Lexer::handle_comment_single_state() {
 void Lexer::handle_comment_block_state() {
     if (idx_ >= src_->size()) {
         // 到达 EOF：未闭合多行注释，抛错
-        throw std::runtime_error("Unterminated block comment at line " + std::to_string(line_));
+        std::assert(false && "Unterminated block comment at line " + std::to_string(line_));
     }
 
     char c = (*src_)[idx_];
@@ -552,7 +544,7 @@ void Lexer::handle_comment_block_state() {
 void Lexer::handle_comment_block_end_state() {
     if (idx_ >= src_->size()) {
         // 到达 EOF：未闭合多行注释，抛错
-        throw std::runtime_error("Unterminated block comment at line " + std::to_string(line_));
+        std::assert(false && "Unterminated block comment at line " + std::to_string(line_));
     }
 
     char c = (*src_)[idx_];
@@ -575,7 +567,7 @@ void Lexer::handle_comment_block_end_state() {
 
 void Lexer::handle_unknown_state() {
     // 未知字符：抛错
-    throw std::runtime_error("Unknown token '" + token_buf_ + "' at line " + std::to_string(line_) + 
+    std::assert(false && "Unknown token '" + token_buf_ + "' at line " + std::to_string(line_) + 
                              ", column " + std::to_string(col_));
 }
 
