@@ -31,8 +31,6 @@ void error_reporter(
     }
 
     // 格式化错误信息
-    std::cerr << "\n" << ConClr::RED << "Lamina Interpreter v" << LAMINA_VERSION << " raise this error"
-        << ConClr::RESET <<std::endl;
     std::cerr << "\n" << ConClr::RESET << ConClr::RED << "ERROR [" << error.err_code << "]: "
               << error.name << ConClr::RESET << "\n";
     std::cerr << "  file: " << src_path << "\n";
