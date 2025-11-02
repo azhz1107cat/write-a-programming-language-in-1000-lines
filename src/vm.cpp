@@ -11,7 +11,7 @@
 
 namespace kiz {
 
-void Vm::load(model::Module* src_module) {
+VmState Vm::load(model::Module* src_module) {
     // 合法性校验：防止空指针访问
     assert(src_module != nullptr && "Vm::load: 传入的src_module不能为nullptr");
     assert(src_module->code != nullptr && "Vm::load: 模块的CodeObject未初始化（code为nullptr）");
@@ -61,9 +61,19 @@ void Vm::load(model::Module* src_module) {
 
     // 模块指令执行完毕，标记VM为非运行状态
     this->running_ = false;
+
+    // 构造并返回当前虚拟机状态
+    VmState state;
+    // 栈顶：操作数栈非空则为栈顶元素，否则为nullptr
+    state.stack_top = op_stack_.empty() ? nullptr : op_stack_.top();
+    // 局部变量：当前调用帧的locals，无调用帧则为空
+    state.locals = call_stack_.empty() 
+        ? deps::HashMap<model::Object*>() 
+        : call_stack_.top()->locals;
+    return state;
 }
 
-VmState Vm::exec(Instruction instruction) { 
+void Vm::exec(Instruction instruction) { 
     switch (instruction.opc) {
         case Opcode::OP_ADD: {
             // 二元运算：至少需要2个操作数
@@ -750,16 +760,6 @@ VmState Vm::exec(Instruction instruction) {
             std::assert(false && "exec: 未知 opcode");
             break;
     }
-
-    // 构造并返回当前虚拟机状态
-    VmState state;
-    // 栈顶：操作数栈非空则为栈顶元素，否则为nullptr
-    state.stack_top = op_stack_.empty() ? nullptr : op_stack_.top();
-    // 局部变量：当前调用帧的locals，无调用帧则为空
-    state.locals = call_stack_.empty() 
-        ? deps::HashMap<model::Object*>() 
-        : call_stack_.top()->locals;
-    return state;
 }
 
 } // namespace kiz
