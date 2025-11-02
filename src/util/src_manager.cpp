@@ -17,6 +17,8 @@
 #include <iterator>
 #include <algorithm>
 
+namespace util {
+
 // 全局文件缓存：键为文件路径，值为文件内容
 inline std::unordered_map<std::string, std::string> opened_files;
 // 全局互斥锁：保证多线程下对opened_files的安全访问
@@ -100,7 +102,7 @@ std::string get_file_by_path(const std::string& path) {
  * @param path 文件路径
  * @return 文件完整内容（打开失败会抛出std::runtime_error）
  */
-std::string open_new_kiz_file(const std::string& path) {
+std::string open_new_file(const std::string& path) {
     // 以文本模式打开文件（自动处理换行符转换，避免二进制模式的乱码问题）
     std::ifstream kiz_file(path, std::ios::in | std::ios::binary);
     if (!kiz_file.is_open()) {
@@ -124,3 +126,5 @@ std::string open_new_kiz_file(const std::string& path) {
 
     return file_content;
 }
+
+} // namespace util
