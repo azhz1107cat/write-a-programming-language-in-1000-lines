@@ -241,9 +241,9 @@ void IRGenerator::gen_expr(Expression* expr) {
         case AstType::DictDeclExpr:
             gen_dict(static_cast<DictDeclExpr*>(expr));
             break;
-        case AstType::ArrayExpr: {
+        case AstType::ListExpr: {
             // 数组字面量：生成每个元素表达式 -> 构建数组（简化：用LOAD_CONST存储数组对象）
-            auto* arr_expr = static_cast<ArrayExpr*>(expr);
+            auto* arr_expr = static_cast<ListExpr*>(expr);
             model::List* arr = new model::List();
             // 处理数组元素
             for (auto& elem : arr_expr->elements) {
