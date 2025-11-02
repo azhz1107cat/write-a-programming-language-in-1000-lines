@@ -20,13 +20,16 @@ std::string Repl::read(std::string prompt) {
 }
 
 void Repl::loop() {
-    // ToDo: ...
+    while (true) {
+        auto code = read(">>>");
+        eval_and_print(code);
+    }
 }
 
 void Repl::eval_and_print(std::string code) {
     kiz::Lexer lexer;
     kiz::Parser parser;
-    kiz::RGenerator ir_gen;
+    kiz::IRGenerator ir_gen;
     kiz::Vm vm;
 
     auto tokens = lexer.tokenize(code);
