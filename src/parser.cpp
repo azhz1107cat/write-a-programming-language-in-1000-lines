@@ -614,7 +614,7 @@ std::unique_ptr<Expression> Parser::parse_primary() {
     if (tok.type == TokenType::LBracket) {
         auto param = parse_params(TokenType::RBracket);
         skip_token("]");
-        return std::make_unique<ArrayExpr>(std::move(param));
+        return std::make_unique<ListExpr>(std::move(param));
     }
     if (tok.type == TokenType::LParen) {
         auto expr = parse_expression();
