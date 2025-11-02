@@ -29,6 +29,8 @@ public:
 
     // parse expr
     std::unique_ptr<Expression> parse_expr();
+    std::unique_ptr<Expression> parse_logical_and();
+    std::unique_ptr<Expression> parse_logical_or();
     std::unique_ptr<Expression> parse_comparison();
     std::unique_ptr<Expression> parse_add_sub();
     std::unique_ptr<Expression> parse_mul_div_mod();
@@ -38,7 +40,7 @@ public:
 
     // parse factor
     std::unique_ptr<Expression> parse_primary();
-    std::vector<std::unique_ptr<Expression>> parse_params(LexerTokenType endswith);
+    std::vector<std::unique_ptr<Expression>> parse_params(TokenType endswith);
 };
 
 } // namespace kiz
