@@ -15,7 +15,7 @@
 #include <utility>
 #include <algorithm> // 用于 max/min 函数
 
-namespace kiz {
+namespace deps {
 
 class BigInt {
 private:
@@ -433,4 +433,4 @@ int main() {
 }
 */
 
-} // namespace kiz
+} // namespace deps
