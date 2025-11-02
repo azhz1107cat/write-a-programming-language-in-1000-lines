@@ -1,0 +1,44 @@
+  _      _       
+ | | __ (_)  ____
+ | |/ / | | |_  /
+ |   <  | |  / / 
+ |_|\_\ |_| /___|
+                 
+
+the kiz cmd help
+===========================
+- repl
+  repl(read exec print loop)
+  Type repl to start repl
+  like this
+  ----------------------
+  | > kiz repl      |
+  ----------------------
+
+- run
+  run the kiz programming file from path
+  Type run for use this function
+  like this
+  -----------------------
+  | > kiz run demo.lm |
+  -----------------------
+  or 
+  ----------------------
+  | > kiz demo.lm    |
+  ----------------------
+
+- version
+  show the version of kiz
+  Type version to see the version of kiz
+  like this
+  -----------------------
+  | > kiz version     |
+  -----------------------
+
+- help
+  show this page in order to get help
+  Type help to see the help of kiz
+  like this
+  -----------------------
+  | > kiz help        |
+  -----------------------
