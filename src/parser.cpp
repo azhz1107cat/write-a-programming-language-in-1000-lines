@@ -389,24 +389,74 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
 }
 
 std::unique_ptr<Expression> Parser::parse_expression() {
-    // ToDo: add op support 'and' 'or' 'not in' 'in'
-    return parse_comparison();
+    return parse_logical_or();
+}
+
+// 处理 or
+std::unique_ptr<Expression> Parser::parse_logical_or() {
+    auto node = parse_logical_and(); // 先解析 and
+    while (curr_token().type == TokenType::Or) {
+        auto op_token = skip_token("or");
+        auto right = parse_logical_and();
+        node = std::make_unique<BinaryExpr>(
+            std::move(op_token.text), 
+            std::move(node), 
+            std::move(right)
+        );
+    }
+    return node;
+}
+
+// 处理 and
+std::unique_ptr<Expression> Parser::parse_logical_and() {
+    auto node = parse_comparison();
+    while (curr_token().type == TokenType::And) {
+        auto op_token = skip_token("and");
+        auto right = parse_comparison();
+        node = std::make_unique<BinaryExpr>(
+            std::move(op_token.text), 
+            std::move(node), 
+            std::move(right)
+        );
+    }
+    return node;
 }
 
 std::unique_ptr<Expression> Parser::parse_comparison() {
     auto node = parse_add_sub();
-    while (
-        curr_token().type == TokenType::Equal
-        or curr_token().type == TokenType::NotEqual
-        or curr_token().type == TokenType::Greater
-        or curr_token().type == TokenType::Less
-        or curr_token().type == TokenType::GreaterEqual
-        or curr_token().type == TokenType::LessEqual
-    ) {
-        auto tok = curr_token();
-        auto op = skip_token().text;
+    while (true) {
+        const auto curr_type = curr_token().type;
+        std::string op_text; // 存储运算符文本（如 "==" "in" "not in"）
+
+        if (curr_type == TokenType::Equal || 
+            curr_type == TokenType::NotEqual || 
+            curr_type == TokenType::Greater || 
+            curr_type == TokenType::Less || 
+            curr_type == TokenType::GreaterEqual || 
+            curr_type == TokenType::LessEqual) {
+            auto op_token = skip_token();
+            op_text = std::move(op_token.text);
+        }
+        // 处理in
+        else if (curr_type == TokenType::In) {
+            auto op_token = skip_token();
+            op_text = "in";
+        }
+        // 处理not in'
+        else if (curr_type == TokenType::Not && peek_token().type == TokenType::In) {
+            skip_token("not");
+            skip_token("in");
+            op_text = "not in";
+        }
+        else {
+            break;
+        }
         auto right = parse_add_sub();
-        node = std::make_unique<BinaryExpr>(std::move(op), std::move(node), std::move(right));
+        node = std::make_unique<BinaryExpr>(
+            std::move(op_text), 
+            std::move(node), 
+            std::move(right)
+        );
     }
     return node;
 }
@@ -452,9 +502,15 @@ std::unique_ptr<Expression> Parser::parse_power() {
 }
 
 std::unique_ptr<Expression> Parser::parse_unary() {
-    // ToDo: add op support 'not'
+    if (curr_token().type == TokenType::Not) {
+        auto op_token = skip_token(); // 跳过 not
+        auto operand = parse_unary(); // 右结合
+        return std::make_unique<UnaryExpr>(
+            std::move(op_token.text),
+            std::move(operand)
+        );
+    }
     if (curr_token().type == TokenType::Minus) {
-        auto tok = curr_token();
         skip_token();
         auto operand = parse_unary();
         return std::make_unique<UnaryExpr>("-", std::move(operand));
