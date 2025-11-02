@@ -6,341 +6,605 @@
  * @date 2025-10-25
  */
 
+#include "../include/lexer.hpp"
+#include <cctype>
+#include <stdexcept>
+#include <algorithm>
+
 namespace kiz {
 
-static std::map<std::string, TokenType> keywords;
-static bool keywords_registered = false;
+// 初始化静态关键字映射
+std::unordered_map<std::string, TokenType> Lexer::keywords_;
+bool Lexer::keywords_inited_ = false;
 
-void registerKeywords() {
-    if (keywords_registered) return;
-    keywords["var"] = TokenType::Var;
-    keywords["func"] = TokenType::Func;
-    keywords["if"] = TokenType::If;
-    keywords["else"] = TokenType::Else;
-    keywords["while"] = TokenType::While;
-    keywords["return"] = TokenType::Return;
-    keywords["import"] = TokenType::Import;
-    keywords["break"] = TokenType::Break;
-    keywords["continue"] = TokenType::Continue;
-    keywords["true"] = TokenType::True;
-    keywords["false"] = TokenType::False;
-    keywords["null"] = TokenType::Null;
-    keywords_registered = true;
+// 辅助函数实现
+void Lexer::init(const std::string& src) {
+    // 初始化 FSM 上下文
+    current_state_ = LexerState::Initial;
+    src_ = &src;
+    idx_ = 0;
+    line_ = 1;
+    col_ = 1;
+    tokens_.clear();
+    token_buf_.clear();
+    token_line_start_ = 0;
+    token_col_start_ = 0;
+
+    // 初始化关键字（仅一次）
+    if (!keywords_inited_) {
+        keywords_ = {
+            {"var", TokenType::Var}, {"func", TokenType::Func}, {"if", TokenType::If},
+            {"else", TokenType::Else}, {"while", TokenType::While}, {"return", TokenType::Return},
+            {"import", TokenType::Import}, {"break", TokenType::Break}, {"continue", TokenType::Continue},
+            {"dict", TokenType::Dict}, {"true", TokenType::True}, {"false", TokenType::False},
+            {"null", TokenType::Null}
+        };
+        keywords_inited_ = true;
+    }
 }
 
-std::vector<Token> Lexer::tokenize(const std::string& src) {
-    std::vector<Token> tokens;
-    size_t i = 0;
-    int line = 1, col = 1;
-    registerKeywords();
-    while (i < src.size()) {
-        if (src[i] == '\n') {
-            if ( !tokens.empty() ) {
-                if (tokens.back().type == TokenType::Backslash) {
-                    tokens.pop_back();
-                }
-                tokens.emplace_back(TokenType::EndOfLine, "\n", line, col);
-            }
-            ++line;
-            col = 1;
-            ++i;
-            continue;
-        }
-        if (isspace(src[i])) {
-            ++col;
-            ++i;
-            continue;
-        }
-        size_t start_col = col;
+void Lexer::transition(LexerState next_state) {
+    current_state_ = next_state;
+}
 
-        if (isalpha(src[i]) || src[i] == '_') {
-            size_t j = i + 1;
-            while (j < src.size() && (isalnum(src[j]) || src[j] == '_')) ++j;
-            std::string ident = src.substr(i, j - i);
-            auto type = TokenType::Identifier;
-            if (keywords.contains(ident)) type = keywords[ident];
-            tokens.emplace_back(type, ident, line, start_col);
-            col += (j - i);
-            i = j;
-        } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '>') {
-            tokens.emplace_back(TokenType::FatArrow, "=>", line, start_col);
-            i += 2;
-            col += 2;
-        }
-        else if (src[i] == '-' && i + 1 < src.size() && src[i + 1] == '>') {
-            tokens.emplace_back(TokenType::ThinArrow, "->", line, start_col);
-            i += 2;
-            col += 2;
-        } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::Equal, "==", line, start_col);
-            i += 2;
-            col += 2;
-        } else if (src[i] == '!' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::NotEqual, "!=", line, start_col);
-            i += 2;
-            col += 2;
-        } else if (src[i] == '!') {
-            tokens.emplace_back(TokenType::ExclamationMark, "!", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '<' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::LessEqual, "<=", line, start_col);
-            i += 2;
-            col += 2;
-        } else if (src[i] == '>' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::GreaterEqual, ">=", line, start_col);
-            i += 2;
-            col += 2;
-        } else if (src[i] == '<') {
-            tokens.emplace_back(TokenType::Less, "<", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '>') {
-            tokens.emplace_back(TokenType::Greater, ">", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == ':') {
-            ++i;
-            ++col;
-            if (src[i] == ':') {
-                ++i;
-                ++col;
-                tokens.emplace_back(TokenType::DoubleColon, "::", line, start_col);
-            }
-        } else if (src[i] == '=') {
-            tokens.emplace_back(TokenType::Assign, "=", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '>') {
-            tokens.emplace_back(TokenType::Greater, ">", line, start_col);
-            ++i;
-            ++col;
-        } else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i + 1]))) {
-            size_t j = i;
-            bool has_dot = false;
-            bool has_underscore;
+void Lexer::emit_token(TokenType type) {
+    // 生成单行 Token（复用缓存的起始位置）
+    tokens_.emplace_back(
+        type, token_buf_,
+        token_line_start_, token_col_start_,
+        line_, col_ - 1  // 结束列 = 当前列 - 1（已读取完 Token 字符）
+    );
+    // 清空缓存
+    token_buf_.clear();
+}
 
-            // Handle decimal numbers including scientific notation
-            // Parse mantissa (before 'e' or 'E')
-            while (j < src.size()) {
-                // 允许数字、单个小数点（仅一次）和下划线（作为分隔符）
-                if (isdigit(src[j])) {
-                    has_underscore = false; // 重置下划线标志
-                    ++j;
-                } else if (src[j] == '.' && !has_dot) {
-                    has_dot = true;
-                    has_underscore = false; // 重置下划线标志
-                    ++j;
-                } else if (src[j] == '_' && !has_underscore && j > i && j + 1 < src.size() && isdigit(src[j + 1])) {
-                    has_underscore = true;
-                    ++j;
-                } else {
-                    break;
-                }
-            }
+void Lexer::emit_token_multi_line(TokenType type, size_t line_end, size_t col_end) {
+    // 生成跨多行 Token（如多行字符串）
+    tokens_.emplace_back(
+        type, token_buf_,
+        token_line_start_, line_end,
+        token_col_start_, col_end
+    );
+    token_buf_.clear();
+}
 
-            // 检查科学计数法（e或E）
-            if (j < src.size() && (src[j] == 'e' || src[j] == 'E')) {
-                size_t e_pos = j;
-                ++j;    // 跳过'e'或'E'
+bool Lexer::is_keyword(const std::string& ident) {
+    return keywords_.count(ident) > 0;
+}
 
-                // 检查指数部分的可选正负号
-                if (j < src.size() && (src[j] == '+' || src[j] == '-')) {
-                    ++j;    // 跳过符号
-                }
+char Lexer::peek() const {
+    // 查看下一个字符（不移动索引）
+    return (idx_ + 1 < src_->size()) ? (*src_)[idx_ + 1] : '\0';
+}
 
-                // 解析指数部分的数字（允许下划线）
-                has_underscore = false; // 重置下划线标志
-                if (j < src.size() && isdigit(src[j])) {
-                    while (j < src.size()) {
-                        if (isdigit(src[j])) {
-                            has_underscore = false;
-                            ++j;
-                        } else if (src[j] == '_' && !has_underscore && j + 1 < src.size() && isdigit(src[j + 1])) {
-                            has_underscore = true;
-                            ++j;
-                        } else {
-                            break;
-                        }
-                    }
-                } else {
-                    // 无效的科学计数法 - 回退到'e'之前的位置
-                    j = e_pos;
+void Lexer::skip_whitespace() {
+    // 跳过空格、制表符（不包括换行，换行在初始态单独处理）
+    while (idx_ < src_->size() && (std::isspace((*src_)[idx_]) && (*src_)[idx_] != '\n')) {
+        idx_++;
+        col_++;
+    }
+}
+
+// 状态处理函数实现
+void Lexer::handle_initial_state() {
+    skip_whitespace(); // 跳过初始态的空白字符
+    if (idx_ >= src_->size()) {
+        transition(LexerState::Terminated);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    switch (true) {
+        // 1. 进入标识符/关键字态：字母或下划线开头
+        case (std::isalpha(c) || c == '_'):
+            token_buf_.push_back(c);
+            token_line_start_ = line_;
+            token_col_start_ = col_;
+            idx_++;
+            col_++;
+            transition(LexerState::Identifier);
+            break;
+
+        // 2. 进入数字态：数字或小数点开头（小数点后需有数字）
+        case (std::isdigit(c) || (c == '.' && std::isdigit(peek()))):
+            token_buf_.push_back(c);
+            token_line_start_ = line_;
+            token_col_start_ = col_;
+            idx_++;
+            col_++;
+            transition(LexerState::Number);
+            break;
+
+        // 3. 进入字符串态：单/双引号
+        case (c == '"' || c == '\''):
+            token_buf_.clear(); // 字符串内容不含引号，仅缓存字符
+            token_line_start_ = line_;
+            token_col_start_ = col_;
+            idx_++;
+            col_++;
+            transition(LexerState::String);
+            break;
+
+        // 4. 进入运算符态：可能是多字符运算符（=, !, <, >, -, | 等）
+        case (c == '=' || c == '!' || c == '<' || c == '>' || c == '-' || 
+              c == '+' || c == '*' || c == '/' || c == '%' || c == '^' || 
+              c == '|' || c == '.'):
+            token_buf_.push_back(c);
+            token_line_start_ = line_;
+            token_col_start_ = col_;
+            idx_++;
+            col_++;
+            transition(LexerState::Operator);
+            break;
+
+        // 5. 进入注释态：// 或 /*
+        case (c == '/' && peek() == '/'):
+            idx_ += 2;
+            col_ += 2;
+            transition(LexerState::CommentSingle);
+            break;
+        case (c == '/' && peek() == '*'):
+            idx_ += 2;
+            col_ += 2;
+            transition(LexerState::CommentBlock);
+            break;
+
+        // 6. 单字符分隔符：直接生成 Token
+        case (c == '('):
+            token_buf_ = "(";
+            emit_token(TokenType::LParen);
+            idx_++;
+            col_++;
+            break;
+        case (c == ')'):
+            token_buf_ = ")";
+            emit_token(TokenType::RParen);
+            idx_++;
+            col_++;
+            break;
+        case (c == '{'):
+            token_buf_ = "{";
+            emit_token(TokenType::LBrace);
+            idx_++;
+            col_++;
+            break;
+        case (c == '}'):
+            // 原逻辑：} 前补分号（非 ;, 结尾时）
+            if (!tokens_.empty()) {
+                TokenType last_type = tokens_.back().type;
+                if (last_type != TokenType::Semicolon && last_type != TokenType::Comma) {
+                    token_buf_ = ";";
+                    emit_token(TokenType::Semicolon);
                 }
             }
+            token_buf_ = "}";
+            emit_token(TokenType::RBrace);
+            idx_++;
+            col_++;
+            break;
+        case (c == '['):
+            token_buf_ = "[";
+            emit_token(TokenType::LBracket);
+            idx_++;
+            col_++;
+            break;
+        case (c == ']'):
+            token_buf_ = "]";
+            emit_token(TokenType::RBracket);
+            idx_++;
+            col_++;
+            break;
+        case (c == ','):
+            token_buf_ = ",";
+            emit_token(TokenType::Comma);
+            idx_++;
+            col_++;
+            break;
+        case (c == ';'):
+            token_buf_ = ";";
+            emit_token(TokenType::Semicolon);
+            idx_++;
+            col_++;
+            break;
+        case (c == '#'): // Bang 符号
+            token_buf_ = "#";
+            emit_token(TokenType::Bang);
+            idx_++;
+            col_++;
+            break;
 
-            // 提取数字字符串并移除所有下划线
-            std::string num_str = src.substr(i, j - i);
-            num_str.erase(std::remove(num_str.begin(), num_str.end(), '_'), num_str.end());
-
-            tokens.emplace_back(TokenType::Number, num_str, line, start_col);
-            col += (j - i);
-            i = j;
-        } else if (src[i] == '(') {
-            tokens.emplace_back(TokenType::LParen, "(", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == ')') {
-            tokens.emplace_back(TokenType::RParen, ")", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == ';') {
-            tokens.emplace_back(TokenType::Semicolon, ";", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '"' || src[i] == '\'') {
-            char quote_type = src[i];
-            size_t j = i + 1;
-            std::string str_content;
-
-            while (j < src.size() && src[j] != quote_type) {
-                if (src[j] == '\\' && j + 1 < src.size()) {
-                    // Handle escape sequences
-                    char next = src[j + 1];
-                    switch (next) {
-                        case 'n':
-                            str_content += '\n';
-                            break;
-                        case 't':
-                            str_content += '\t';
-                            break;
-                        case 'r':
-                            str_content += '\r';
-                            break;
-                        case '\\':
-                            str_content += '\\';
-                            break;
-                        case '"':
-                            str_content += '"';
-                            break;
-                        case '\'':
-                            str_content += '\'';
-                            break;
-                        default:
-                            str_content += '\\';
-                            str_content += next;
-                            break;
-                    }
-                    j += 2;
-                } else {
-                    str_content += src[j];
-                    j++;
-                }
-            }
-
-            if (j >= src.size()) {// Unterminated string
-                throw StdLibException("Error: Unterminated string literal at line " + line);
-                i = src.size();// Stop tokenizing
+        // 7. 换行符：生成 EndOfLine
+        case (c == '\n'):
+            // 原逻辑：若最后是反斜杠，移除反斜杠不生成 EOL
+            if (!tokens_.empty() && tokens_.back().type == TokenType::Backslash) {
+                tokens_.pop_back();
             } else {
-                tokens.emplace_back(TokenType::String, str_content, line, start_col);
-                col += (j - i + 1);
-                i = j + 1;
+                token_buf_ = "\n";
+                emit_token(TokenType::EndOfLine);
             }
-        } else if (src[i] == '+') {
-            tokens.emplace_back(TokenType::Plus, "+", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '-') {
-            tokens.emplace_back(TokenType::Minus, "-", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '*') {
-            tokens.emplace_back(TokenType::Star, "*", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '\\') {
-            tokens.emplace_back(TokenType::Backslash, "\\", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '/' && i + 1 < src.size() && src[i + 1] == '/') {
-            // Single line comment with //
-            size_t j = i + 2;
-            while (j < src.size() && src[j] != '\n') ++j;
-            i = j;
-            continue;
-        } else if (src[i] == '/' && i + 1 < src.size() && src[i + 1] == '*') {
-            // Block comment with /* */
-            size_t j = i + 2;
-            while (j + 1 < src.size()) {
-                if (src[j] == '*' && src[j + 1] == '/') {
-                    j += 2;
-                    break;
-                }
-                if (src[j] == '\n') {
-                    line++;
-                    col = 1;
-                } else {
-                    col++;
-                }
-                j++;
-            }
-            i = j;
-            continue;
-        } else if (src[i] == '/') {
-            tokens.emplace_back(TokenType::Slash, "/", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '%') {
-            tokens.emplace_back(TokenType::Percent, "%", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '^') {
-            tokens.emplace_back(TokenType::Caret, "^", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '!') {
-            tokens.emplace_back(TokenType::Bang, "!", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '{') {
-            tokens.emplace_back(TokenType::LBrace, "{", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '}') {
-            if (
-                tokens.back().type != TokenType::Semicolon
-                and tokens.back().type != TokenType::Comma
-            ) {
-                tokens.emplace_back(TokenType::Semicolon, ";", line, start_col);
-            }
-            tokens.emplace_back(TokenType::RBrace, "}", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '[') {
-            tokens.emplace_back(TokenType::LBracket, "[", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == ']') {
-            tokens.emplace_back(TokenType::RBracket, "]", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '|') {
-            tokens.emplace_back(TokenType::Pipe, "|", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == ',') {
-            tokens.emplace_back(TokenType::Comma, ",", line, start_col);
-            ++i;
-            ++col;
-        } else if (src[i] == '.') {
-            ++i;
-            ++col;
-            if (src[i] == '.') {
-                ++i;
-                ++col;
-                ++i;
-                ++col;
-                tokens.emplace_back(TokenType::TripleDot, "...", line, start_col);
-            }
-            else {
-                tokens.emplace_back(TokenType::Dot, ".", line, start_col);
-            }
+            idx_++;
+            line_++;
+            col_ = 1;
+            break;
+
+        // 8. 未知字符
+        default:
+            token_buf_ = std::string(1, c);
+            transition(LexerState::Unknown);
+            break;
+    }
+}
+
+void Lexer::handle_identifier_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：生成标识符/关键字 Token
+        TokenType type = is_keyword(token_buf_) ? keywords_[token_buf_] : TokenType::Identifier;
+        emit_token(type);
+        transition(LexerState::Terminated);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    if (std::isalnum(c) || c == '_') {
+        // 继续读取标识符字符
+        token_buf_.push_back(c);
+        idx_++;
+        col_++;
+    } else {
+        // 遇到非标识符字符：生成 Token，回到初始态
+        TokenType type = is_keyword(token_buf_) ? keywords_[token_buf_] : TokenType::Identifier;
+        emit_token(type);
+        transition(LexerState::Initial);
+    }
+}
+
+void Lexer::handle_number_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：处理数字（移除下划线）
+        token_buf_.erase(std::remove(token_buf_.begin(), token_buf_.end(), '_'), token_buf_.end());
+        emit_token(TokenType::Number);
+        transition(LexerState::Terminated);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    switch (true) {
+        case (std::isdigit(c)):
+            // 读取数字
+            token_buf_.push_back(c);
+            idx_++;
+            col_++;
+            break;
+        case (c == '.' && token_buf_.find('.') == std::string::npos):
+            // 读取小数点（仅允许一个）
+            token_buf_.push_back(c);
+            idx_++;
+            col_++;
+            transition(LexerState::NumberDot);
+            break;
+        case (c == 'e' || c == 'E'):
+            // 读取科学计数法的 e/E
+            token_buf_.push_back(c);
+            idx_++;
+            col_++;
+            transition(LexerState::NumberExp);
+            break;
+        case (c == '_' && std::isdigit(peek())):
+            // 读取下划线（仅允许数字间的分隔）
+            token_buf_.push_back(c);
+            idx_++;
+            col_++;
+            break;
+        default:
+            // 遇到非数字字符：生成 Number Token
+            token_buf_.erase(std::remove(token_buf_.begin(), token_buf_.end(), '_'), token_buf_.end());
+            emit_token(TokenType::Number);
+            transition(LexerState::Initial);
+            break;
+    }
+}
+
+void Lexer::handle_number_dot_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：小数点结尾视为无效，按未知处理
+        transition(LexerState::Unknown);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    if (std::isdigit(c)) {
+        // 继续读取小数点后的数字
+        token_buf_.push_back(c);
+        idx_++;
+        col_++;
+    } else if (c == 'e' || c == 'E') {
+        // 进入科学计数法态
+        token_buf_.push_back(c);
+        idx_++;
+        col_++;
+        transition(LexerState::NumberExp);
+    } else {
+        // 遇到非数字：生成 Number Token
+        token_buf_.erase(std::remove(token_buf_.begin(), token_buf_.end(), '_'), token_buf_.end());
+        emit_token(TokenType::Number);
+        transition(LexerState::Initial);
+    }
+}
+
+void Lexer::handle_number_exp_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：e 结尾视为无效
+        transition(LexerState::Unknown);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    if (std::isdigit(c)) {
+        // 读取指数部分数字
+        token_buf_.push_back(c);
+        idx_++;
+        col_++;
+    } else if (c == '+' || c == '-') {
+        // 读取指数符号
+        token_buf_.push_back(c);
+        idx_++;
+        col_++;
+        transition(LexerState::NumberExpSign);
+    } else {
+        // 无效指数：回退到 e 之前，生成数字 Token
+        token_buf_.pop_back(); // 移除 e
+        token_buf_.erase(std::remove(token_buf_.begin(), token_buf_.end(), '_'), token_buf_.end());
+        emit_token(TokenType::Number);
+        transition(LexerState::Initial);
+    }
+}
+
+void Lexer::handle_number_exp_sign_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：符号结尾视为无效
+        transition(LexerState::Unknown);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    if (std::isdigit(c)) {
+        // 读取指数符号后的数字
+        token_buf_.push_back(c);
+        idx_++;
+        col_++;
+    } else {
+        // 无效指数：回退符号和 e，生成数字 Token
+        token_buf_.pop_back(); // 移除符号
+        token_buf_.pop_back(); // 移除 e
+        token_buf_.erase(std::remove(token_buf_.begin(), token_buf_.end(), '_'), token_buf_.end());
+        emit_token(TokenType::Number);
+        transition(LexerState::Initial);
+    }
+}
+
+void Lexer::handle_string_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：未闭合字符串，抛错
+        throw std::runtime_error("Unterminated string at line " + std::to_string(line_));
+    }
+
+    char c = (*src_)[idx_];
+    if (c == '"' || c == '\'') {
+        // 遇到闭合引号：生成 String Token
+        emit_token(TokenType::String);
+        idx_++;
+        col_++;
+        transition(LexerState::Initial);
+    } else if (c == '\\' && idx_ + 1 < src_->size()) {
+        // 处理转义字符
+        char next = (*src_)[idx_ + 1];
+        switch (next) {
+            case 'n': token_buf_.push_back('\n'); break;
+            case 't': token_buf_.push_back('\t'); break;
+            case 'r': token_buf_.push_back('\r'); break;
+            case '\\': token_buf_.push_back('\\'); break;
+            case '"': token_buf_.push_back('"'); break;
+            case '\'': token_buf_.push_back('\''); break;
+            default: token_buf_.push_back('\\'); token_buf_.push_back(next); break;
+        }
+        idx_ += 2;
+        col_ += 2;
+    } else {
+        // 读取普通字符
+        token_buf_.push_back(c);
+        if (c == '\n') {
+            // 多行字符串：更新行号列号
+            line_++;
+            col_ = 1;
         } else {
-            throw StdLibException("Unknown token '"+std::string(1, src[i]) + "'");
+            col_++;
+        }
+        idx_++;
+    }
+}
+
+void Lexer::handle_operator_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：生成单字符运算符 Token
+        char op = token_buf_[0];
+        TokenType type = [op]() {
+            switch (op) {
+                case '=': return TokenType::Assign;
+                case '!': return TokenType::ExclamationMark;
+                case '<': return TokenType::Less;
+                case '>': return TokenType::Greater;
+                case '-': return TokenType::Minus;
+                case '+': return TokenType::Plus;
+                case '*': return TokenType::Star;
+                case '/': return TokenType::Slash;
+                case '%': return TokenType::Percent;
+                case '^': return TokenType::Caret;
+                case '|': return TokenType::Pipe;
+                case '.': return TokenType::Dot;
+                default: return TokenType::Unknown;
+            }
+        }();
+        emit_token(type);
+        transition(LexerState::Terminated);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    std::string current_op = token_buf_ + c;
+    // 判断是否为多字符运算符
+    TokenType multi_type = TokenType::Unknown;
+    if (current_op == "==") multi_type = TokenType::Equal;
+    else if (current_op == "!=") multi_type = TokenType::NotEqual;
+    else if (current_op == "<=") multi_type = TokenType::LessEqual;
+    else if (current_op == ">=") multi_type = TokenType::GreaterEqual;
+    else if (current_op == "=>") multi_type = TokenType::FatArrow;
+    else if (current_op == "->") multi_type = TokenType::ThinArrow;
+    else if (current_op == "::") multi_type = TokenType::DoubleColon;
+    else if (current_op == "..") {
+        // 处理三字符运算符 ...
+        if (peek() == '.') {
+            token_buf_ += "..";
+            idx_ += 2;
+            col_ += 2;
+            emit_token(TokenType::TripleDot);
+            transition(LexerState::Initial);
+            return;
         }
     }
-    tokens.emplace_back(TokenType::EndOfFile, "", line, col);
-    return tokens;
+
+    if (multi_type != TokenType::Unknown) {
+        // 多字符运算符：更新缓存，生成 Token
+        token_buf_ = current_op;
+        emit_token(multi_type);
+        idx_++;
+        col_++;
+        transition(LexerState::Initial);
+    } else {
+        // 单字符运算符：生成 Token
+        char op = token_buf_[0];
+        TokenType type = [op]() {
+            switch (op) {
+                case '=': return TokenType::Assign;
+                case '!': return TokenType::ExclamationMark;
+                case '<': return TokenType::Less;
+                case '>': return TokenType::Greater;
+                case '-': return TokenType::Minus;
+                case '+': return TokenType::Plus;
+                case '*': return TokenType::Star;
+                case '/': return TokenType::Slash;
+                case '%': return TokenType::Percent;
+                case '^': return TokenType::Caret;
+                case '|': return TokenType::Pipe;
+                case '.': return TokenType::Dot;
+                default: return TokenType::Unknown;
+            }
+        }();
+        emit_token(type);
+        transition(LexerState::Initial);
+    }
 }
 
-} // namespace kiz
+void Lexer::handle_comment_single_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：结束单行注释
+        transition(LexerState::Terminated);
+        return;
+    }
+
+    char c = (*src_)[idx_];
+    if (c == '\n') {
+        // 换行：结束单行注释，处理换行
+        idx_++;
+        line_++;
+        col_ = 1;
+        transition(LexerState::Initial);
+    } else {
+        // 跳过注释内容
+        idx_++;
+        col_++;
+    }
+}
+
+void Lexer::handle_comment_block_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：未闭合多行注释，抛错
+        throw std::runtime_error("Unterminated block comment at line " + std::to_string(line_));
+    }
+
+    char c = (*src_)[idx_];
+    if (c == '*') {
+        // 可能到达注释结尾：进入结束态
+        idx_++;
+        col_++;
+        transition(LexerState::CommentBlockEnd);
+    } else {
+        // 跳过注释内容（更新行号列号）
+        if (c == '\n') {
+            line_++;
+            col_ = 1;
+        } else {
+            col_++;
+        }
+        idx_++;
+    }
+}
+
+void Lexer::handle_comment_block_end_state() {
+    if (idx_ >= src_->size()) {
+        // 到达 EOF：未闭合多行注释，抛错
+        throw std::runtime_error("Unterminated block comment at line " + std::to_string(line_));
+    }
+
+    char c = (*src_)[idx_];
+    if (c == '/') {
+        // 闭合多行注释：回到初始态
+        idx_++;
+        col_++;
+        transition(LexerState::Initial);
+    } else if (c == '*') {
+        // 仍在注释结尾态：继续等待 /
+        idx_++;
+        col_++;
+    } else {
+        // 回到多行注释态，继续读取
+        idx_++;
+        col_++;
+        transition(LexerState::CommentBlock);
+    }
+}
+
+void Lexer::handle_unknown_state() {
+    // 未知字符：抛错
+    throw std::runtime_error("Unknown token '" + token_buf_ + "' at line " + std::to_string(line_) + 
+                             ", column " + std::to_string(col_));
+}
+
+// 核心分词接口
+std::vector<Token> Lexer::tokenize(const std::string& src) {
+    init(src); // 初始化 FSM
+
+    // FSM 主循环：直到进入终止态
+    while (current_state_ != LexerState::Terminated) {
+        switch (current_state_) {
+            case LexerState::Initial: handle_initial_state(); break;
+            case LexerState::Identifier: handle_identifier_state(); break;
+            case LexerState::Number: handle_number_state(); break;
+            case LexerState::NumberDot: handle_number_dot_state(); break;
+            case LexerState::NumberExp: handle_number_exp_state(); break;
+            case LexerState::NumberExpSign: handle_number_exp_sign_state(); break;
+            case LexerState::String: handle_string_state(); break;
+            case LexerState::Operator: handle_operator_state(); break;
+            case LexerState::CommentSingle: handle_comment_single_state(); break;
+            case LexerState::CommentBlock: handle_comment_block_state(); break;
+            case LexerState::CommentBlockEnd: handle_comment_block_end_state(); break;
+            case LexerState::Unknown: handle_unknown_state(); break;
+            case LexerState::Terminated: break; // 终止态：退出循环
+        }
+    }
+
+    // 生成 EOF Token
+    tokens_.emplace_back(TokenType::EndOfFile, "", line_, col_);
+    return tokens_;
+}
+
+}  // namespace kiz
