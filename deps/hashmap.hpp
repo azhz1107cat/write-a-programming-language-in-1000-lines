@@ -127,7 +127,7 @@ public:
         while (current != nullptr) {
             if (current->hash == hash && current->key == key) {
                 current->value = std::move(val);
-                return VT();  // 返回默认构造的T（对应原代码LAMINA_NULL）
+                return VT();
             }
             current = current->next;
         }
