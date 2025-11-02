@@ -6,26 +6,38 @@
  * @date 2025-10-25
  */
 
+namespace ui {
 
-ui::Repl::Repl() {
+Repl::Repl() {
     // ToDo: ...
 }
 
-std::string ui::Repl::read() {
+std::string Repl::read(std::string prompt) {
     std::string result;
-    std::cout << ">>>";
+    std::cout << prompt;
     std::geine(std::cout, result);
     return result;
 }
 
-void ui::Repl::loop() {
+void Repl::loop() {
     // ToDo: ...
 }
 
-void ui::Repl::eval_and_print() {
-    
+void Repl::eval_and_print(std::string code) {
+    Lexer lexer;
+    Parser parser;
+    IRGenerator ir_gen;
+    Vm vm;
+
+    auto tokens = lexer.tokenize(code);
+    auto ast = parser.parse(tokens);
+    auto ir = ir_gen.gen(std::move(ast));
+    auto result = vm.load(ir);
+    std::cout << result.stack_top << std::endl;
 }
 
-void ui::Repl::~Repl() {
+void Repl::~Repl() {
     // ToDo: ...
 }
+
+} // namespace ui
