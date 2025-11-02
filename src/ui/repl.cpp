@@ -12,7 +12,10 @@ ui::Repl::Repl() {
 }
 
 std::string ui::Repl::read() {
-    // ToDo: ...
+    std::string result;
+    std::cout << ">>>";
+    std::geine(std::cout, result);
+    return result;
 }
 
 void ui::Repl::loop() {
@@ -20,7 +23,7 @@ void ui::Repl::loop() {
 }
 
 void ui::Repl::eval_and_print() {
-    // ToDo: ...
+    
 }
 
 void ui::Repl::~Repl() {
