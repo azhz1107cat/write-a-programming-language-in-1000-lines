@@ -28,7 +28,7 @@ public:
     std::unique_ptr<BlockStmt> parse_block();
 
     // parse expr
-    std::unique_ptr<Expression> parse_expr();
+    std::unique_ptr<Expression> parse_expression();
     std::unique_ptr<Expression> parse_logical_and();
     std::unique_ptr<Expression> parse_logical_or();
     std::unique_ptr<Expression> parse_comparison();
