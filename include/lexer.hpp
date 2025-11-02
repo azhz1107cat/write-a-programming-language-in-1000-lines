@@ -19,143 +19,117 @@
 #include <vector>
 #include <utility>
 #include <cstddef>
+#include <unordered_map>
 
 namespace kiz {
 
+// 有限自动状态机（FSM）的状态枚举
 /**
- * @enum TokenType
- * @brief 词法单元（Token）的类型枚举
- * 
- * 按功能分类：关键字、标识符、字面量、运算符、分隔符、特殊标记。
+ * @enum LexerState
+ * @brief FSM 状态：描述分词过程的不同阶段
  */
+enum class LexerState {
+    Initial,        // 初始态：等待下一个 Token 的开始
+    Identifier,     // 标识符/关键字态：读取字母、数字、下划线
+    Number,         // 数字态：读取整数、小数、科学计数法
+    NumberDot,      // 数字小数点态：已读取小数点，等待后续数字
+    NumberExp,      // 数字指数态：已读取 e/E，等待指数部分（正负号/数字）
+    NumberExpSign,  // 数字指数符号态：已读取 e后的±，等待指数数字
+    String,         // 字符串态：读取引号内字符（含转义）
+    Operator,       // 运算符态：处理多字符运算符（如 ==、=>）
+    CommentSingle,  // 单行注释态：// 直到换行
+    CommentBlock,   // 多行注释态：/* 直到 */
+    CommentBlockEnd,// 多行注释结束态：已读取 *，等待 /
+    Unknown,        // 未知态：遇到无法识别的字符
+    Terminated      // 终止态：分词完成（EOF）
+};
+
+// Token 类型与结构体
 enum class TokenType {
-    // 关键字（Keyword）
-    Var,        ///< 变量声明关键字（如 `var x = 1`）
-    Func,       ///< 函数声明关键字（如 `func add(a, b) { ... }`）
-    If,         ///< 条件判断关键字（如 `if (cond) { ... }`）
-    Else,       ///< 条件分支关键字（如 `else { ... }`）
-    While,      ///< 循环关键字（如 `while (cond) { ... }`）
-    Return,     ///< 函数返回关键字（如 `return 42`）
-    Import,     ///< 模块导入关键字（如 `import module`）
-    Break,      ///< 循环中断关键字（如 `break`）
-    Continue,   ///< 循环继续关键字（如 `continue`）
-    Dict,       ///< 字典类型关键字（如 `dict { key: val }`）
-    True,       ///< 布尔真值（如 `true`）
-    False,      ///< 布尔假值（如 `false`）
-    Null,       ///< 空值（如 `null`）
-
-    // 标识符（Identifier）：变量名、函数名、模块名等
-    Identifier, ///< 标识符（如 `x`、`add`、`user_name`）
-
-    // 赋值运算符（Assignment）
-    Assign,     ///< 赋值运算符（`=`，如 `x = 5`）
-
-    // 字面量（Literal）：直接量值
-    Number,     ///< 数字字面量（如 `123`、`3.14`、`-45`）
-    String,     ///< 字符串字面量（如 `"hello"`、`'world'`，需支持转义）
-
-    // 分隔符（Separator）：括号、逗号、分号等
-    LParen,     ///< 左圆括号（`(`，如函数参数列表开始）
-    RParen,     ///< 右圆括号（`)`，如函数参数列表结束）
-    LBrace,     ///< 左花括号（`{`，如代码块开始）
-    RBrace,     ///< 右花括号（`}`，如代码块结束）
-    LBracket,   ///< 左方括号（`[`，如数组/字典索引开始）
-    RBracket,   ///< 右方括号（`]`，如数组/字典索引结束）
-    Comma,      ///< 逗号（`,`，如参数分隔 `a, b`）
-    Dot,        ///< 点号（`.`，如属性访问 `obj.prop`）
-    Semicolon,  ///< 分号（`;`，如语句结束标记）
-
-    // 运算符（Operator）：算术、比较、逻辑等
-    ExclamationMark, ///< 感叹号（`!`，如逻辑非 `!cond`）
-    Plus,            ///< 加号（`+`，如加法 `a + b`、正号 `+5`）
-    Minus,           ///< 减号（`-`，如减法 `a - b`、负号 `-3`）
-    Star,            ///< 星号（`*`，如乘法 `a * b`）
-    Slash,           ///< 斜杠（`/`，如除法 `a / b`）
-    Backslash,       ///< 反斜杠（`\`，如字符串转义 `\"`）
-    Percent,         ///< 百分号（`%`，如取模 `a % b`）
-    Caret,           ///< 脱字符（`^`，如按位异或 `a ^ b`）
-    Bang,            ///< 井号（`#`，如注释开始 `# 这是注释` 或特殊标记）
-    Equal,           ///< 双等号（`==`，如相等比较 `a == b`）
-    NotEqual,        ///< 不等号（`!=`，如不等比较 `a != b`）
-    Less,            ///< 小于号（`<`，如 `a < b`）
-    LessEqual,       ///< 小于等于号（`<=`，如 `a <= b`）
-    Greater,         ///< 大于号（`>`，如 `a > b`）
-    GreaterEqual,    ///< 大于等于号（`>=`，如 `a >= b`）
-    Pipe,            ///< 竖线（`|`，如按位或 `a | b`、逻辑或 `a || b`）
-    FatArrow,        ///< 胖箭头（`=>`，如匿名函数 `(a) => a*2`）
-    ThinArrow,       ///< 瘦箭头（`->`，如函数返回类型 `func add() -> int`）
-
-    // 特殊标记（Special）
-    EndOfFile,   ///< 文件结束标记（EOF，标识源代码解析完成）
-    EndOfLine,   ///< 行结束标记（EOL，可选：用于行内语法校验）
-    Unknown      ///< 未知标记（如无法识别的字符 `@`、`$`，用于报错）
+    // 关键字
+    Var, Func, If, Else, While, Return, Import, Break, Continue, Dict,
+    True, False, Null,
+    // 标识符
+    Identifier,
+    // 赋值运算符
+    Assign,
+    // 字面量
+    Number, String,
+    // 分隔符
+    LParen, RParen, LBrace, RBrace, LBracket, RBracket,
+    Comma, Dot, TripleDot, Semicolon,
+    // 运算符
+    ExclamationMark, Plus, Minus, Star, Slash, Backslash,
+    Percent, Caret, Bang, Equal, NotEqual,
+    Less, LessEqual, Greater, GreaterEqual, Pipe,
+    FatArrow, ThinArrow, DoubleColon,
+    // 特殊标记
+    EndOfFile, EndOfLine, Unknown
 };
 
-/**
- * @struct Token
- * @brief 词法单元结构体：存储单个Token的完整信息
- * 
- * 包含Token的类型、原始文本、位置（行号/列号），位置信息用于语法分析报错时定位源代码位置，
- * 行号/列号均从 1 开始，跨多行的Token（如多行字符串）需记录开始和结束行号。
- */
 struct Token {
-    TokenType type;          ///< Token类型（如 Keyword::If、Literal::Number）
-    std::string text;        ///< Token原始文本（如 `if`、`123`、`==`）
-    size_t lineno_start;     ///< Token开始的行号（从1开始）
-    size_t lineno_end;       ///< Token结束的行号（从1开始，单行Token与lineno_start相同）
-    size_t column_start;     ///< Token开始的列号（从1开始）
-    size_t column_end;       ///< Token结束的列号（从1开始）
+    TokenType type;
+    std::string text;
+    size_t lineno_start;
+    size_t lineno_end;
+    size_t column_start;
+    size_t column_end;
 
-    /**
-     * @brief Token构造函数（单行Token专用）
-     * @param t Token类型
-     * @param txt Token原始文本（使用std::move避免拷贝开销）
-     * @param lineno Token所在行号（开始=结束）
-     * @param col_start Token开始列号
-     * @param col_end Token结束列号
-     */
+    // 单行 Token 构造
     Token(TokenType t, std::string txt, size_t lineno, size_t col_start, size_t col_end)
-        : type(t)
-        , text(std::move(txt))
-        , lineno_start(lineno)
-        , lineno_end(lineno)  // 单行Token：结束行=开始行
-        , column_start(col_start)
-        , column_end(col_end) {}
+        : type(t), text(std::move(txt)), lineno_start(lineno), lineno_end(lineno),
+          column_start(col_start), column_end(col_end) {}
 
-    /**
-     * @brief Token构造函数（跨多行Token专用，如多行字符串）
-     * @param t Token类型
-     * @param txt Token原始文本
-     * @param lineno_s 开始行号
-     * @param lineno_e 结束行号
-     * @param col_s 开始列号
-     * @param col_e 结束列号
-     */
+    // 跨多行 Token 构造（如多行字符串）
     Token(TokenType t, std::string txt, size_t lineno_s, size_t lineno_e, size_t col_s, size_t col_e)
-        : type(t)
-        , text(std::move(txt))
-        , lineno_start(lineno_s)
-        , lineno_end(lineno_e)
-        , column_start(col_s)
-        , column_end(col_e) {}
+        : type(t), text(std::move(txt)), lineno_start(lineno_s), lineno_end(lineno_e),
+          column_start(col_s), column_end(col_e) {}
 };
 
-/**
- * @class Lexer
- * @brief 词法分析器类：将源代码字符串转换为Token序列
- * 
- * 核心接口为 tokenize()，内部通过私有辅助函数实现字符读取、空白跳过、关键字判断等逻辑，
- * 封装解析状态（当前位置、行号、列号），确保外部无法直接修改解析过程，符合封装原则。
- */
+// 词法分析器类
 class Lexer {
 public:
-    /**
-     * @brief 对源代码进行分词，生成Token序列
-     * @param src 源代码字符串（如从文件读取的代码）
-     * @return std::vector<Token> 分词后的Token列表，末尾包含EndOfFile标记
-     * @note 若遇到无法识别的字符，会生成Unknown类型的Token（含位置信息），不中断分词流程
-     */
     std::vector<Token> tokenize(const std::string& src);
+
+private:
+    // FSM 上下文：当前状态、源代码索引、位置信息、Token 缓存
+    LexerState current_state_;       // 当前状态
+    const std::string* src_;         // 源代码指针（避免拷贝）
+    size_t idx_;                     // 当前字符索引
+    size_t line_;                    // 当前行号（1-based）
+    size_t col_;                     // 当前列号（1-based）
+    std::vector<Token> tokens_;      // 最终 Token 结果
+    // 临时缓存：当前 Token 的文本、起始位置（用于生成 Token）
+    std::string token_buf_;
+    size_t token_line_start_;
+    size_t token_col_start_;
+
+    // 关键字映射
+    static std::unordered_map<std::string, TokenType> keywords_;
+    static bool keywords_inited_;
+
+    // 核心s状态处理函数（每个状态对应一个函数
+    void init(const std::string& src);          // 初始化 FSM 上下文
+    void transition(LexerState next_state);     // 状态转移（更新当前状态）
+    void emit_token(TokenType type);            // 生成 Token（清空缓存）
+    void emit_token_multi_line(TokenType type, size_t line_end, size_t col_end); // 跨多行 Token
+    bool is_keyword(const std::string& ident);  // 判断标识符是否为关键字
+    char peek() const;                          // 查看下一个字符（不移动索引）
+    void skip_whitespace();                     // 跳过空白字符（空格、制表符）
+
+    // 各状态的核心处理逻辑
+    void handle_initial_state();    // 初始态处理
+    void handle_identifier_state(); // 标识符/关键字态处理
+    void handle_number_state();     // 数字态处理
+    void handle_number_dot_state(); // 数字小数点态处理
+    void handle_number_exp_state(); // 数字指数态处理
+    void handle_number_exp_sign_state(); // 数字指数符号态处理
+    void handle_string_state();     // 字符串态处理
+    void handle_operator_state();   // 运算符态处理
+    void handle_comment_single_state(); // 单行注释态处理
+    void handle_comment_block_state();  // 多行注释态处理
+    void handle_comment_block_end_state(); // 多行注释结束态处理
+    void handle_unknown_state();    // 未知态处理
 };
 
 }  // namespace kiz
