@@ -16,7 +16,7 @@ std::string Repl::read(std::string prompt) {
     std::string result;
     std::cout << prompt;
     std::geine(std::cout, result);
-    return result;
+    return trim(result);
 }
 
 void Repl::loop() {
@@ -24,16 +24,16 @@ void Repl::loop() {
 }
 
 void Repl::eval_and_print(std::string code) {
-    Lexer lexer;
-    Parser parser;
-    IRGenerator ir_gen;
-    Vm vm;
+    kiz::Lexer lexer;
+    kiz::Parser parser;
+    kiz::RGenerator ir_gen;
+    kiz::Vm vm;
 
     auto tokens = lexer.tokenize(code);
     auto ast = parser.parse(tokens);
     auto ir = ir_gen.gen(std::move(ast));
     auto result = vm.load(ir);
-    std::cout << result.stack_top << std::endl;
+    std::cout << model::to_string(result.stack_top) << std::endl;
 }
 
 void Repl::~Repl() {
