@@ -5,7 +5,9 @@
  * @author azhz1107cat
  */
 
-std::string util::generate_separator(const int col_start, const int col_end, const int line_end) {
+namespace util {
+
+std::string ugenerate_separator(const int col_start, const int col_end, const int line_end) {
     std::stringstream ss;
     ss << std::to_string(line_end).size(); // 对齐行号
     for (int i = 1; i < col_start; ++i) ss << " ";
@@ -14,7 +16,7 @@ std::string util::generate_separator(const int col_start, const int col_end, con
     return ss.str();
 }
 
-void util::error_reporter(
+void error_reporter(
     const std::string& src_path,
     const int& src_line_start,
     const int& src_line_end,
@@ -47,3 +49,5 @@ void util::error_reporter(
 
     std::exit(error.err_code);
 }
+
+} // namespace util
