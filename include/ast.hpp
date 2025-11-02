@@ -12,7 +12,7 @@ namespace kiz {
 
 enum class AstType {
     // 表达式类型（对应 Expression 子类）
-    StringExpr, NumberExpr, ArrayExpr, IdentifierExpr,
+    StringExpr, NumberExpr, ListExpr, IdentifierExpr,
     BinaryExpr, UnaryExpr,
     CallExpr,
     GetMemberExpr, SetMemberExpr, GetItemExpr,
@@ -75,12 +75,12 @@ struct NumberExpr final :  Expression {
 };
 
 // 数组字面量
-struct ArrayExpr final :  Expression {
+struct ListExpr final :  Expression {
     std::vector<std::unique_ptr<Expression>> elements;
-    explicit ArrayExpr(std::vector<std::unique_ptr<Expression>> elems)
+    explicit ListExpr(std::vector<std::unique_ptr<Expression>> elems)
         : elements(std::move(elems)) {
-        this->ast_type = AstType::ArrayExpr;
-        this->type_info = std::make_unique<TypeInfo>("array", {});
+        this->ast_type = AstType::ListExpr;
+        this->type_info = std::make_unique<TypeInfo>("list", {});
     }
 };
 
