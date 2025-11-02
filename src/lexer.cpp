@@ -6,23 +6,25 @@
  * @date 2025-10-25
  */
 
-static std::map<std::string, kiz::TokenType> keywords;
+namespace kiz {
+
+static std::map<std::string, TokenType> keywords;
 static bool keywords_registered = false;
 
 void registerKeywords() {
     if (keywords_registered) return;
-    keywords["var"] = kiz::TokenType::Var;
-    keywords["func"] = kiz::TokenType::Func;
-    keywords["if"] = kiz::TokenType::If;
-    keywords["else"] = kiz::TokenType::Else;
-    keywords["while"] = kiz::TokenType::While;
-    keywords["return"] = kiz::TokenType::Return;
-    keywords["import"] = kiz::TokenType::Import;
-    keywords["break"] = kiz::TokenType::Break;
-    keywords["continue"] = kiz::TokenType::Continue;
-    keywords["true"] = kiz::TokenType::True;
-    keywords["false"] = kiz::TokenType::False;
-    keywords["null"] = kiz::TokenType::Null;
+    keywords["var"] = TokenType::Var;
+    keywords["func"] = TokenType::Func;
+    keywords["if"] = TokenType::If;
+    keywords["else"] = TokenType::Else;
+    keywords["while"] = TokenType::While;
+    keywords["return"] = TokenType::Return;
+    keywords["import"] = TokenType::Import;
+    keywords["break"] = TokenType::Break;
+    keywords["continue"] = TokenType::Continue;
+    keywords["true"] = TokenType::True;
+    keywords["false"] = TokenType::False;
+    keywords["null"] = TokenType::Null;
     keywords_registered = true;
 }
 
@@ -34,10 +36,10 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     while (i < src.size()) {
         if (src[i] == '\n') {
             if ( !tokens.empty() ) {
-                if (tokens.back().type == kiz::TokenType::Backslash) {
+                if (tokens.back().type == TokenType::Backslash) {
                     tokens.pop_back();
                 }
-                tokens.emplace_back(kiz::TokenType::EndOfLine, "\n", line, col);
+                tokens.emplace_back(TokenType::EndOfLine, "\n", line, col);
             }
             ++line;
             col = 1;
@@ -55,46 +57,46 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             size_t j = i + 1;
             while (j < src.size() && (isalnum(src[j]) || src[j] == '_')) ++j;
             std::string ident = src.substr(i, j - i);
-            auto type = kiz::TokenType::Identifier;
+            auto type = TokenType::Identifier;
             if (keywords.contains(ident)) type = keywords[ident];
             tokens.emplace_back(type, ident, line, start_col);
             col += (j - i);
             i = j;
         } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '>') {
-            tokens.emplace_back(kiz::TokenType::FatArrow, "=>", line, start_col);
+            tokens.emplace_back(TokenType::FatArrow, "=>", line, start_col);
             i += 2;
             col += 2;
         }
         else if (src[i] == '-' && i + 1 < src.size() && src[i + 1] == '>') {
-            tokens.emplace_back(kiz::TokenType::ThinArrow, "->", line, start_col);
+            tokens.emplace_back(TokenType::ThinArrow, "->", line, start_col);
             i += 2;
             col += 2;
         } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(kiz::TokenType::Equal, "==", line, start_col);
+            tokens.emplace_back(TokenType::Equal, "==", line, start_col);
             i += 2;
             col += 2;
         } else if (src[i] == '!' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(kiz::TokenType::NotEqual, "!=", line, start_col);
+            tokens.emplace_back(TokenType::NotEqual, "!=", line, start_col);
             i += 2;
             col += 2;
         } else if (src[i] == '!') {
-            tokens.emplace_back(kiz::TokenType::ExclamationMark, "!", line, start_col);
+            tokens.emplace_back(TokenType::ExclamationMark, "!", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '<' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(kiz::TokenType::LessEqual, "<=", line, start_col);
+            tokens.emplace_back(TokenType::LessEqual, "<=", line, start_col);
             i += 2;
             col += 2;
         } else if (src[i] == '>' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(kiz::TokenType::GreaterEqual, ">=", line, start_col);
+            tokens.emplace_back(TokenType::GreaterEqual, ">=", line, start_col);
             i += 2;
             col += 2;
         } else if (src[i] == '<') {
-            tokens.emplace_back(kiz::TokenType::Less, "<", line, start_col);
+            tokens.emplace_back(TokenType::Less, "<", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '>') {
-            tokens.emplace_back(kiz::TokenType::Greater, ">", line, start_col);
+            tokens.emplace_back(TokenType::Greater, ">", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == ':') {
@@ -103,14 +105,14 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             if (src[i] == ':') {
                 ++i;
                 ++col;
-                tokens.emplace_back(kiz::TokenType::DoubleColon, "::", line, start_col);
+                tokens.emplace_back(TokenType::DoubleColon, "::", line, start_col);
             }
         } else if (src[i] == '=') {
-            tokens.emplace_back(kiz::TokenType::Assign, "=", line, start_col);
+            tokens.emplace_back(TokenType::Assign, "=", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '>') {
-            tokens.emplace_back(kiz::TokenType::Greater, ">", line, start_col);
+            tokens.emplace_back(TokenType::Greater, ">", line, start_col);
             ++i;
             ++col;
         } else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i + 1]))) {
@@ -171,19 +173,19 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             std::string num_str = src.substr(i, j - i);
             num_str.erase(std::remove(num_str.begin(), num_str.end(), '_'), num_str.end());
 
-            tokens.emplace_back(kiz::TokenType::Number, num_str, line, start_col);
+            tokens.emplace_back(TokenType::Number, num_str, line, start_col);
             col += (j - i);
             i = j;
         } else if (src[i] == '(') {
-            tokens.emplace_back(kiz::TokenType::LParen, "(", line, start_col);
+            tokens.emplace_back(TokenType::LParen, "(", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == ')') {
-            tokens.emplace_back(kiz::TokenType::RParen, ")", line, start_col);
+            tokens.emplace_back(TokenType::RParen, ")", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == ';') {
-            tokens.emplace_back(kiz::TokenType::Semicolon, ";", line, start_col);
+            tokens.emplace_back(TokenType::Semicolon, ";", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '"' || src[i] == '\'') {
@@ -230,24 +232,24 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
                 throw StdLibException("Error: Unterminated string literal at line " + line);
                 i = src.size();// Stop tokenizing
             } else {
-                tokens.emplace_back(kiz::TokenType::String, str_content, line, start_col);
+                tokens.emplace_back(TokenType::String, str_content, line, start_col);
                 col += (j - i + 1);
                 i = j + 1;
             }
         } else if (src[i] == '+') {
-            tokens.emplace_back(kiz::TokenType::Plus, "+", line, start_col);
+            tokens.emplace_back(TokenType::Plus, "+", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '-') {
-            tokens.emplace_back(kiz::TokenType::Minus, "-", line, start_col);
+            tokens.emplace_back(TokenType::Minus, "-", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '*') {
-            tokens.emplace_back(kiz::TokenType::Star, "*", line, start_col);
+            tokens.emplace_back(TokenType::Star, "*", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '\\') {
-            tokens.emplace_back(kiz::TokenType::Backslash, "\\", line, start_col);
+            tokens.emplace_back(TokenType::Backslash, "\\", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '/' && i + 1 < src.size() && src[i + 1] == '/') {
@@ -275,49 +277,49 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             i = j;
             continue;
         } else if (src[i] == '/') {
-            tokens.emplace_back(kiz::TokenType::Slash, "/", line, start_col);
+            tokens.emplace_back(TokenType::Slash, "/", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '%') {
-            tokens.emplace_back(kiz::TokenType::Percent, "%", line, start_col);
+            tokens.emplace_back(TokenType::Percent, "%", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '^') {
-            tokens.emplace_back(kiz::TokenType::Caret, "^", line, start_col);
+            tokens.emplace_back(TokenType::Caret, "^", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '!') {
-            tokens.emplace_back(kiz::TokenType::Bang, "!", line, start_col);
+            tokens.emplace_back(TokenType::Bang, "!", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '{') {
-            tokens.emplace_back(kiz::TokenType::LBrace, "{", line, start_col);
+            tokens.emplace_back(TokenType::LBrace, "{", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '}') {
             if (
-                tokens.back().type != kiz::TokenType::Semicolon
-                and tokens.back().type != kiz::TokenType::Comma
+                tokens.back().type != TokenType::Semicolon
+                and tokens.back().type != TokenType::Comma
             ) {
-                tokens.emplace_back(kiz::TokenType::Semicolon, ";", line, start_col);
+                tokens.emplace_back(TokenType::Semicolon, ";", line, start_col);
             }
-            tokens.emplace_back(kiz::TokenType::RBrace, "}", line, start_col);
+            tokens.emplace_back(TokenType::RBrace, "}", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '[') {
-            tokens.emplace_back(kiz::TokenType::LBracket, "[", line, start_col);
+            tokens.emplace_back(TokenType::LBracket, "[", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == ']') {
-            tokens.emplace_back(kiz::TokenType::RBracket, "]", line, start_col);
+            tokens.emplace_back(TokenType::RBracket, "]", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '|') {
-            tokens.emplace_back(kiz::TokenType::Pipe, "|", line, start_col);
+            tokens.emplace_back(TokenType::Pipe, "|", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == ',') {
-            tokens.emplace_back(kiz::TokenType::Comma, ",", line, start_col);
+            tokens.emplace_back(TokenType::Comma, ",", line, start_col);
             ++i;
             ++col;
         } else if (src[i] == '.') {
@@ -328,15 +330,17 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
                 ++col;
                 ++i;
                 ++col;
-                tokens.emplace_back(kiz::TokenType::TripleDot, "...", line, start_col);
+                tokens.emplace_back(TokenType::TripleDot, "...", line, start_col);
             }
             else {
-                tokens.emplace_back(kiz::TokenType::Dot, ".", line, start_col);
+                tokens.emplace_back(TokenType::Dot, ".", line, start_col);
             }
         } else {
             throw StdLibException("Unknown token '"+std::string(1, src[i]) + "'");
         }
     }
-    tokens.emplace_back(kiz::TokenType::EndOfFile, "", line, col);
+    tokens.emplace_back(TokenType::EndOfFile, "", line, col);
     return tokens;
 }
+
+} // namespace kiz
