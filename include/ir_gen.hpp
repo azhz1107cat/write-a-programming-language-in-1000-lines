@@ -22,7 +22,6 @@ class IRGenerator {
 public:
     model::Module* gen();
     void gen_block(BlockStmt* block);
-    void gen_mod();
     void gen_expr();
     void gen_fn_call();
     void gen_dict();
