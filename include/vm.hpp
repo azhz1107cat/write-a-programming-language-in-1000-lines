@@ -37,8 +37,8 @@ class Vm {
     bool running_ = false;
 
 public:
-    void load(model::Module* src_module);
-    VmState exec(Introduction introduction);
+    VmState load(model::Module* src_module);
+    void exec(Introduction introduction);
 };
 
 } // namespace kiz
