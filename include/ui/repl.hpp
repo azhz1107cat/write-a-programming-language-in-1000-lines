@@ -23,7 +23,7 @@ private:
     // 命令历史记录
     std::vector<std::string> cmd_history_;
     // 循环运行标志
-    bool is_running_;
+    bool is_running_{};
 
     /**
      * @brief 辅助函数：打印命令提示符
@@ -51,7 +51,7 @@ private:
      * @param str 待处理的字符串
      * @return 去除首尾空白后的字符串
      */
-    std::string trim(const std::string& str) const {
+    [[nodiscard]] static std::string trim(const std::string& str) {
         auto left = std::find_if_not(str.begin(), str.end(), [](unsigned char c) {
             return std::isspace(c);
         });
@@ -79,7 +79,7 @@ public:
      * 流程：打印提示符 → 读取一行输入 → 去除首尾空白 → 添加到历史（非空时）
      * @return 处理后的用户输入字符串（空串表示用户输入仅空白）
      */
-    std::string read();
+    [[nodiscard]] std::string read(const std::string &prompt) const;
 
     /**
      * @brief REPL 主循环
@@ -96,7 +96,7 @@ public:
      * 自定义命令逻辑可在此函数内扩展
      * @param cmd 经 read() 处理后的用户命令
      */
-    void eval_and_print(const std::string& cmd);
+    static void eval_and_print(const std::string& cmd);
 
     /**
      * @brief 手动停止 REPL 循环
@@ -118,7 +118,7 @@ public:
      * @brief 获取当前命令历史记录
      * @return 命令历史的常量引用（只读，避免外部修改）
      */
-    const std::vector<std::string>& get_history() const {
+    [[nodiscard]] const std::vector<std::string>& get_history() const {
         return cmd_history_;
     }
 };

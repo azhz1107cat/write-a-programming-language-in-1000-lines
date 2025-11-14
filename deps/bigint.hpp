@@ -8,12 +8,13 @@
  */
 
 #pragma once
-#include <vector>
-#include <string>
-#include <ostream>
+#include <algorithm> // 鐢ㄤ簬 max/min 鍑芥暟
+#include <cassert>
 #include <cstdint>
+#include <ostream>
+#include <string>
 #include <utility>
-#include <algorithm> // 用于 max/min 函数
+#include <vector>
 
 namespace deps {
 
@@ -391,46 +392,5 @@ public:
         return os;
     }
 };
-
-
-// ========================= 使用示例（可直接在代码中测试） =========================
-/*
-#include <iostream>
-int main() {
-    // 初始化测试
-    BigInt a("123456789012345678901234567890"); // 大正数
-    BigInt b(-987654321);                        // 负数（size_t初始化后改符号，或直接字符串"-987654321"）
-    BigInt c(123);                               // size_t初始化
-
-    // 加法测试
-    BigInt add_res = a + c;
-    std::cout << "a + c = " << add_res << std::endl; // 123456789012345678901234567890 + 123 = 123456789012345678901234568013
-
-    // 减法测试
-    BigInt sub_res = a - b;
-    std::cout << "a - b = " << sub_res << std::endl; // 123456789012345678901234567890 - (-987654321) = 123456789012345678901234568877
-
-    // 乘法测试（大数字高效计算）
-    BigInt mul_res = a * c;
-    std::cout << "a * c = " << mul_res << std::endl; // 123456789012345678901234567890 * 123 = 15185185048518518504851851850470
-
-    // 取模测试（重点验证符号规则）
-    BigInt mod1 = a % c;                // 12345678901234567890 mod 100 → 90（正）
-    BigInt mod2 = b % c;                // -789 mod 100 → -89（与被除数同号）
-    BigInt mod3 = a % b;                // 12345678901234567890 mod (-789) → 36（与被除数同号）
-    BigInt mod4 = d % c;                // 0 mod 100 → 0
-
-    // 输出结果
-    std::cout << "a = " << a << std::endl;
-    std::cout << "b = " << b << std::endl;
-    std::cout << "a % c = " << mod1 << std::endl;  // 输出：90
-    std::cout << "b % c = " << mod2 << std::endl;  // 输出：-89
-    std::cout << "a % b = " << mod3 << std::endl;  // 输出：36
-    std::cout << "d % c = " << mod4 << std::endl;  // 输出：0
-
-   
-    return 0;
-}
-*/
 
 } // namespace deps

@@ -6,10 +6,11 @@
  * @date 2025-10-25
  */
 
-#include "../include/lexer.hpp"
+#include "../../include/lexer.hpp"
+#include <algorithm>
+#include <cassert>
 #include <cctype>
 #include <stdexcept>
-#include <algorithm>
 
 namespace kiz {
 
@@ -377,7 +378,7 @@ void Lexer::handle_number_exp_sign_state() {
 void Lexer::handle_string_state() {
     if (idx_ >= src_->size()) {
         // 到达 EOF：未闭合字符串，抛错
-        std::assert(false && "Unterminated string at line " + std::to_string(line_));
+        assert(false && ("Unterminated string at line " + std::to_string(line_)).data());
     }
 
     char c = (*src_)[idx_];
@@ -520,7 +521,9 @@ void Lexer::handle_comment_single_state() {
 void Lexer::handle_comment_block_state() {
     if (idx_ >= src_->size()) {
         // 到达 EOF：未闭合多行注释，抛错
-        std::assert(false && "Unterminated block comment at line " + std::to_string(line_));
+        assert(false && ("Unterminated block comment at line " +
+                              std::to_string(line_))
+                                 .data());
     }
 
     char c = (*src_)[idx_];
@@ -544,7 +547,9 @@ void Lexer::handle_comment_block_state() {
 void Lexer::handle_comment_block_end_state() {
     if (idx_ >= src_->size()) {
         // 到达 EOF：未闭合多行注释，抛错
-        std::assert(false && "Unterminated block comment at line " + std::to_string(line_));
+        assert(false &&
+               ("Unterminated block comment at line " + std::to_string(line_))
+                   .data());
     }
 
     char c = (*src_)[idx_];
@@ -567,8 +572,9 @@ void Lexer::handle_comment_block_end_state() {
 
 void Lexer::handle_unknown_state() {
     // 未知字符：抛错
-    std::assert(false && "Unknown token '" + token_buf_ + "' at line " + std::to_string(line_) + 
-                             ", column " + std::to_string(col_));
+    assert(false && ("Unknown token '" + token_buf_ + "' at line " +
+                     std::to_string(line_) + ", column " + std::to_string(col_))
+                        .data());
 }
 
 // 核心分词接口
@@ -595,7 +601,7 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
     }
 
     // 生成 EOF Token
-    tokens_.emplace_back(TokenType::EndOfFile, "", line_, col_);
+    tokens_.emplace_back(TokenType::EndOfFile, "", line_, col_, col_);
     return tokens_;
 }
 

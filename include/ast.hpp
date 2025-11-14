@@ -7,6 +7,9 @@
  */
 
 #pragma once
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace kiz {
 
@@ -32,7 +35,7 @@ struct ASTNode {
     int end_ln = 0;
     int start_col = 0;
     int end_col = 0;
-    AstType ast_type;
+    AstType ast_type = AstType::NullStmt;
     
     virtual ~ASTNode() = default;
 };
@@ -41,7 +44,7 @@ struct ASTNode {
 struct TypeInfo {
     std::string type_name;
     std::vector<std::unique_ptr<TypeInfo>> subs;
-    TypeInfo(std::string tn, std::vector<std::unique_ptr<TypeInfo>> s)
+    explicit TypeInfo(std::string tn, std::vector<std::unique_ptr<TypeInfo>> s = {})
         : type_name(std::move(tn)), subs(std::move(s)) {}
 };
 
@@ -57,20 +60,20 @@ struct Statement :  ASTNode {};
 // 字符串字面量
 struct StringExpr final :  Expression {
     std::string value;
-    StringExpr(std::string v)
+    explicit StringExpr(std::string v)
         : value(std::move(v)) {
         this->ast_type = AstType::StringExpr;
-        this->type_info = std::make_unique<TypeInfo>("string", {});
+        this->type_info = std::make_unique<TypeInfo>("string");
     }
 };
 
 // 数字字面量
 struct NumberExpr final :  Expression {
     std::string value;
-    NumberExpr(std::string v)
+    explicit NumberExpr(std::string v)
         : value(std::move(v)) {
         this->ast_type = AstType::NumberExpr;
-        this->type_info = std::make_unique<TypeInfo>("number", {});
+        this->type_info = std::make_unique<TypeInfo>("number");
     }
 };
 
@@ -80,7 +83,7 @@ struct ListExpr final :  Expression {
     explicit ListExpr(std::vector<std::unique_ptr<Expression>> elems)
         : elements(std::move(elems)) {
         this->ast_type = AstType::ListExpr;
-        this->type_info = std::make_unique<TypeInfo>("list", {});
+        this->type_info = std::make_unique<TypeInfo>("list");
     }
 };
 
@@ -90,7 +93,7 @@ struct IdentifierExpr final :  Expression {
     explicit IdentifierExpr(std::string n)
         : name(std::move(n)) {
         this->ast_type = AstType::IdentifierExpr;
-        this->type_info = std::make_unique<TypeInfo>("identifier", {});
+        this->type_info = std::make_unique<TypeInfo>("identifier");
     }
 };
 
@@ -101,7 +104,7 @@ struct BinaryExpr final :  Expression {
     BinaryExpr(std::string o, std::unique_ptr<Expression> l, std::unique_ptr<Expression> r)
         : op(std::move(o)), left(std::move(l)), right(std::move(r)) {
         this->ast_type = AstType::BinaryExpr;
-        this->type_info = std::make_unique<TypeInfo>("binary_expr", {});
+        this->type_info = std::make_unique<TypeInfo>("binary_expr");
     }
 };
 
@@ -112,7 +115,7 @@ struct UnaryExpr final :  Expression {
     UnaryExpr(std::string o, std::unique_ptr<Expression> e)
         : op(std::move(o)), operand(std::move(e)) {
         this->ast_type = AstType::UnaryExpr;
-        this->type_info = std::make_unique<TypeInfo>("unary_expr", {});
+        this->type_info = std::make_unique<TypeInfo>("unary_expr");
     }
 };
 
@@ -184,7 +187,7 @@ struct CallExpr final :  Expression {
     CallExpr(std::unique_ptr<Expression> c, std::vector<std::unique_ptr<Expression>> a)
         : callee(std::move(c)), args(std::move(a)) {
         this->ast_type = AstType::CallExpr;
-        this->type_info = std::make_unique<TypeInfo>("call_expr", {});
+        this->type_info = std::make_unique<TypeInfo>("call_expr");
     }
 };
 
@@ -195,7 +198,7 @@ struct GetMemberExpr final :  Expression {
     GetMemberExpr(std::unique_ptr<Expression> f, std::unique_ptr<IdentifierExpr> c)
         : father(std::move(f)), child(std::move(c)) {
         this->ast_type = AstType::GetMemberExpr;
-        this->type_info = std::make_unique<TypeInfo>("get_member_expr", {});
+        this->type_info = std::make_unique<TypeInfo>("get_member_expr");
     }
 };
 
@@ -206,7 +209,7 @@ struct SetMemberExpr final :  Expression {
     SetMemberExpr(std::unique_ptr<Expression> g_mem, std::unique_ptr<Expression> val)
         : g_mem(std::move(g_mem)), val(std::move(val)) {
         this->ast_type = AstType::SetMemberExpr;
-        this->type_info = std::make_unique<TypeInfo>("set_member_expr", {});
+        this->type_info = std::make_unique<TypeInfo>("set_member_expr");
     }
 };
 
@@ -217,7 +220,7 @@ struct GetItemExpr final :  Expression {
     GetItemExpr(std::unique_ptr<Expression> f, std::vector<std::unique_ptr<Expression>> p)
         : father(std::move(f)), params(std::move(p)) {
         this->ast_type = AstType::GetItemExpr;
-        this->type_info = std::make_unique<TypeInfo>("get_item_expr", {});
+        this->type_info = std::make_unique<TypeInfo>("get_item_expr");
     }
 };
 
@@ -229,7 +232,7 @@ struct LambdaDeclExpr final :  Expression {
     LambdaDeclExpr(std::string n, std::vector<std::string> p, std::unique_ptr<BlockStmt> b)
         : name(std::move(n)), params(std::move(p)), body(std::move(b)) {
         this->ast_type = AstType::LambdaDeclExpr;
-        this->type_info = std::make_unique<TypeInfo>("lambda_expr", {});
+        this->type_info = std::make_unique<TypeInfo>("lambda_expr");
     }
 };
 
@@ -240,7 +243,7 @@ struct DictDeclExpr final :  Expression {
     DictDeclExpr(std::string n, std::vector<std::pair<std::string, std::unique_ptr<Expression>>> i)
         : name(std::move(n)), init_list(std::move(i)) {
         this->ast_type = AstType::DictDeclExpr;
-        this->type_info = std::make_unique<TypeInfo>("dict", {});
+        this->type_info = std::make_unique<TypeInfo>("dict");
     }
 };
 

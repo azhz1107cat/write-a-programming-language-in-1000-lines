@@ -6,6 +6,11 @@
  */
 
 #pragma once
+#include "ast.hpp"
+#include "lexer.hpp"
+
+#include <memory>
+#include <string>
 
 namespace kiz {
 
@@ -13,8 +18,9 @@ class Parser {
     const std::vector<Token> tokens_;
     long long unsigned int curr_tok_idx_ = 0;
 public:
-    explicit Parser(const std::vector<Token>& tokens);
-    ~Parser() = default;
+    explicit Parser(const std::vector<Token> &tokens);
+  Token skip_token();
+  ~Parser() = default;
 
     Token skip_token(const std::string& want_skip = "");
     void skip_end_of_ln();

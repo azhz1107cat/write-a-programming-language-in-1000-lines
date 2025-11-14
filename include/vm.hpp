@@ -5,7 +5,20 @@
  * @author azhz1107cat
  * @date 2025-10-25
  */
-namespace kiz{
+#pragma once
+
+#include "../deps/bigint.hpp"
+#include "../deps/hashmap.hpp"
+
+#include <stack>
+
+namespace model {
+class Module;
+class CodeObject;
+class Object;
+}
+namespace kiz {
+enum class Opcode;
 
 struct VmState{
     model::Object* stack_top;
@@ -29,7 +42,7 @@ struct CallFrame {
 };
 
 class Vm {
-    std::stack<model::Object*> op_stack_;
+    std::stack<model::Object *> op_stack_;
     std::vector<model::Object*> constant_pool_;
     std::stack<std::unique_ptr<CallFrame>> call_stack_;
     size_t pc_;
@@ -38,7 +51,7 @@ class Vm {
 
 public:
     VmState load(model::Module* src_module);
-    void exec(Introduction introduction);
+    void exec(Instruction introduction);
 };
 
 } // namespace kiz

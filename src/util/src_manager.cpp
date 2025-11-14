@@ -6,21 +6,22 @@
  * @author azhz1107cat
  */
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <unordered_map>
-#include <string>
-#include <vector>
-#include <mutex>
-#include <stdexcept>
-#include <iterator>
+#include "util/src_manager.hpp"
+
 #include <algorithm>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <mutex>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace util {
 
-// 全局文件缓存：键为文件路径，值为文件内容
-inline std::unordered_map<std::string, std::string> opened_files;
 // 全局互斥锁：保证多线程下对opened_files的安全访问
 inline std::mutex opened_files_mutex;
 

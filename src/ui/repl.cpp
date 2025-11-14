@@ -1,10 +1,17 @@
 /**
  * @file repl.cpp
  * @brief 交互式终端（Read Evaluate Print Loop，简称 REPL）核心实现
- * 
+ *
  * @author azhz1107cat
  * @date 2025-10-25
  */
+
+#include "ui/repl.hpp"
+
+#include "lexer.hpp"
+#include "vm.hpp"
+#include "ir_gen.hpp"
+#include "parser.hpp"
 
 namespace ui {
 
@@ -12,10 +19,10 @@ Repl::Repl() {
     // ToDo: ...
 }
 
-std::string Repl::read(std::string prompt) {
+std::string Repl::read(const std::string& prompt) const {
     std::string result;
     std::cout << prompt;
-    std::geine(std::cout, result);
+    std::getline(std::cin, result);
     return trim(result);
 }
 
@@ -26,21 +33,17 @@ void Repl::loop() {
     }
 }
 
-void Repl::eval_and_print(std::string code) {
-    kiz::Lexer lexer;
-    kiz::Parser parser;
-    kiz::IRGenerator ir_gen;
-    kiz::Vm vm;
-
-    auto tokens = lexer.tokenize(code);
-    auto ast = parser.parse(tokens);
-    auto ir = ir_gen.gen(std::move(ast));
-    auto result = vm.load(ir);
-    std::cout << model::to_string(result.stack_top) << std::endl;
-}
-
-void Repl::~Repl() {
-    // ToDo: ...
+void Repl::eval_and_print(const std::string& code) {
+    // kiz::Lexer lexer;
+    // kiz::Parser parser;
+    // kiz::IRGenerator ir_gen;
+    // kiz::Vm vm;
+    //
+    // auto tokens = lexer.tokenize(code);
+    // auto ast = parser.parse(tokens);
+    // auto ir = ir_gen.gen(std::move(ast));
+    // auto result = vm.load(ir);
+    // std::cout << model::to_string(result.stack_top) << std::endl;
 }
 
 } // namespace ui

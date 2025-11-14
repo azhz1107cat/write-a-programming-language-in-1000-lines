@@ -6,12 +6,14 @@
  * @date 2025-10-25
  */
 
-#include <vector>
-#include <memory>
-#include <cerrno>
-#include <cassert>
+#include "parser.hpp"
+
 #include <algorithm>
+#include <cassert>
+#include <cerrno>
 #include <iostream>
+#include <memory>
+#include <vector>
 
 namespace kiz {
 
@@ -26,15 +28,15 @@ Token Parser::skip_token() {
 
 
 Token Parser::skip_token(const std::string& want_skip) {
-    if (curr_tok_idx_ < tokens_->size()) {
-        const Token& curr_tok = tokens_->at(curr_tok_idx_);
+    if (curr_tok_idx_ < tokens_.size()) {
+        const Token& curr_tok = tokens_.at(curr_tok_idx_);
         // 若指定了期望文本，校验当前Token是否匹配
         if (!want_skip.empty() && curr_tok.text != want_skip) {
-            std::cerr << ConClr::RED
-                      << "[Syntax Error] Expected '" << want_skip << "', but got '"
-                      << curr_tok.text << "' (Line: " << curr_tok.line << ", Col: " << curr_tok.col << ")"
-                      << ConClr::RESET << std::endl;
-            std::assert(false && "Syntax mismatch in skip_token");
+            // std::cerr << ConClr::RED
+            //           << "[Syntax Error] Expected '" << want_skip << "', but got '"
+            //           << curr_tok.text << "' (Line: " << curr_tok.line << ", Col: " << curr_tok.col << ")"
+            //           << ConClr::RESET << std::endl;
+            assert(false && "Syntax mismatch in skip_token");
         }
         curr_tok_idx_++;  // 移动到下一个Token
         return curr_tok;
@@ -45,8 +47,8 @@ Token Parser::skip_token(const std::string& want_skip) {
 
 // curr_token实现
 Token Parser::curr_token() const {
-    if (curr_tok_idx_ < tokens_->size()) {
-        return tokens_->at(curr_tok_idx_);
+    if (curr_tok_idx_ < tokens_.size()) {
+        return tokens_.at(curr_tok_idx_);
     }
     return {TokenType::EndOfFile, "", 0, 0};
 }
@@ -72,14 +74,14 @@ void Parser::skip_end_of_ln() {
               << "[Syntax Error] Statement must end with ';' or newline, got '"
               << curr_tok.text << "' (Line: " << curr_tok.line << ", Col: " << curr_tok.col << ")"
               << ConClr::RESET << std::endl;
-    std::assert(false && "Invalid statement terminator");
+    assert(false && "Invalid statement terminator");
 }
 
 // skip_start_of_block实现 处理函数体前置换行
 void Parser::skip_start_of_block() {
     // 跳过函数定义后所有连续的换行符，确保正确解析函数体第一条语句
-    while (curr_tok_idx_ < tokens_->size()) {
-        const Token& curr_tok = tokens_->at(curr_tok_idx_);
+    while (curr_tok_idx_ < tokens_.size()) {
+        const Token& curr_tok = tokens_.at(curr_tok_idx_);
         if (curr_tok.type == TokenType::EndOfLine) {
             skip_token("\n");
         } else {
@@ -89,7 +91,7 @@ void Parser::skip_start_of_block() {
 }
 
 // parse_program实现（解析整个程序
-std::vector<std::unique_ptr<Statement>> Parser::parse_program() {
+std::vector<std::unique_ptr<Statement>> Parser::parse() {
     std::vector<std::unique_ptr<Statement>> program_stmts;
     // 循环解析所有语句，直到EOF
     while (curr_token().type != TokenType::EndOfFile) {
@@ -101,12 +103,12 @@ std::vector<std::unique_ptr<Statement>> Parser::parse_program() {
 }
 
 // parse_block
-std::unique_ptr<BlockStmt> Parser::parse_block(bool is_global) {
+std::unique_ptr<BlockStmt> Parser::parse_block() {
     std::vector<std::unique_ptr<Statement>> block_stmts;
     // 循环解析块内语句，直到遇到end关键字（替代原RBrace）
-    while (curr_tok_idx_ < tokens_->size()) {
+    while (curr_tok_idx_ < tokens_.size()) {
         const Token& curr_tok = curr_token();
-        if (curr_tok.type == TokenType::End) {
+        if (curr_tok.type == TokenType::EndOfFile) {
             break;  // 遇到end，结束块解析
         }
         // 解析单条语句并加入块
@@ -120,16 +122,16 @@ std::unique_ptr<BlockStmt> Parser::parse_block(bool is_global) {
     }
     // 校验块结束符是否为end（防止提前EOF）
     const Token& end_tok = curr_token();
-    if (end_tok.type != TokenType::End) {
-        std::cerr << ConClr::RED
-                  << "[Syntax Error] Block must end with 'end', got '"
-                  << end_tok.text << "' (Line: " << end_tok.line << ", Col: " << end_tok.col << ")"
-                  << ConClr::RESET << std::endl;
-        std::assert(false && "Block missing 'end' terminator");
+    if (end_tok.type != TokenType::EndOfFile) {
+        // std::cerr << ConClr::RED
+        //           << "[Syntax Error] Block must end with 'end', got '"
+        //           << end_tok.text << "' (Line: " << end_tok.line << ", Col: " << end_tok.col << ")"
+        //           << ConClr::RESET << std::endl;
+        // std::assert(false && "Block missing 'end' terminator");
     }
     // 跳过end关键字，完成块解析
     skip_token("end");
-    return std::make_unique<BlockStmt>(std::move(block_stmts), is_global);
+    return std::make_unique<BlockStmt>(std::move(block_stmts));
 }
 
 // parse_if实现
@@ -179,10 +181,10 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         // 解析循环条件表达式
         auto cond_expr = parse_expression();
         if (!cond_expr) {
-            std::cerr << ConClr::RED
-                      << "[Syntax Error] While statement missing condition expression"
-                      << ConClr::RESET << std::endl;
-            std::assert(false && "Invalid while condition");
+            // std::cerr << ConClr::RED
+            //           << "[Syntax Error] While statement missing condition expression"
+            //           << ConClr::RESET << std::endl;
+            // assert(false && "Invalid while condition");
         }
         // 解析循环体（无大括号，用end结尾）
         skip_start_of_block();
@@ -196,11 +198,11 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         // 读取函数名（必须是标识符）
         const Token func_name_tok = skip_token();
         if (func_name_tok.type != TokenType::Identifier) {
-            std::cerr << ConClr::RED
-                      << "[Syntax Error] Function name must be an identifier, got '"
-                      << func_name_tok.text << "' (Line: " << func_name_tok.line << ")"
-                      << ConClr::RESET << std::endl;
-            std::assert(false && "Invalid function name");
+            // std::cerr << ConClr::RED
+            //           << "[Syntax Error] Function name must be an identifier, got '"
+            //           << func_name_tok.text << "' (Line: " << func_name_tok.line << ")"
+            //           << ConClr::RESET << std::endl;
+            // assert(false && "Invalid function name");
         }
         const std::string func_name = func_name_tok.text;
 
@@ -323,8 +325,8 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
     }
 
     // 解析赋值语句（x = expr;）
-    if (curr_tok.type == TokenType::Identifier && curr_tok_idx_ + 1 < tokens_->size()) {
-        const Token next_tok = tokens_->at(curr_tok_idx_ + 1);
+    if (curr_tok.type == TokenType::Identifier && curr_tok_idx_ + 1 < tokens_.size()) {
+        const Token next_tok = tokens_.at(curr_tok_idx_ + 1);
         if (next_tok.type == TokenType::Assign) {
             const std::string var_name = skip_token().text;  // 读取赋值目标变量名
             skip_token("=");                                 // 跳过赋值符号
@@ -379,10 +381,10 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
     }
 
     // 跳过无效Token（容错处理）
-    while (curr_tok_idx_ < tokens_->size() && curr_token().type != TokenType::EndOfLine) {
+    while (curr_tok_idx_ < tokens_.size() && curr_token().type != TokenType::EndOfLine) {
         skip_token();  // 跳过当前无效Token
     }
-    if (curr_tok_idx_ < tokens_->size()) {
+    if (curr_tok_idx_ < tokens_.size()) {
         skip_token();  // 跳过换行符
     }
     return nullptr;  // 无有效语句，返回空

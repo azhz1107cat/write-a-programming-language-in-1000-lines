@@ -1,0 +1,56 @@
+# 导入
+import math
+
+print math.abs(-10)
+
+# 基本
+fn hello
+    print("hi")
+end
+
+x = 100
+y = 0.1 + 0.2
+print y==0.3
+
+print x
+hello()
+
+user_input = input("Type Y/N")
+if user_input == "Y"
+    print "You print Y"
+else if user_input = "N"
+    print "You print N"
+else
+    print "You print "+user_input
+end
+
+# 字典
+dict Dog
+    name = "Tom"
+    age = 10
+end
+
+print Dog.name
+Dog.age = 11
+print Dog.age
+
+print Nil is Nil
+
+# 闭包
+fn a
+    outer = 10
+    print outer
+    fn b
+        fn c
+            fn d
+                nonlocal outer = 100
+                global x = 666
+            end
+        end
+    end
+    d()
+    print outer
+end
+
+a()
+print x

@@ -6,12 +6,12 @@
  * @date 2025-10-25
  */
 
-#include "../include/ast.hpp"
-#include "../include/models.hpp"
-#include "../include/opcode.hpp"
-#include "../include/ir_generator.hpp"
-#include <cassert>
+#include "../../include/ir_gen.hpp"
+#include "../../include/ast.hpp"
+#include "../../include/models.hpp"
+#include "../../include/opcode.hpp"
 #include <algorithm>
+#include <cassert>
 
 namespace kiz {
 

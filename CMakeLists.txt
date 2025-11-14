@@ -1,8 +1,6 @@
-# 最低CMake版本要求
 cmake_minimum_required(VERSION 3.10)
 
-# 项目信息：名称、版本、语言（仅C++）
-project(kiz 
+project(kiz
         VERSION 0.1.0 
         LANGUAGES CXX)
 

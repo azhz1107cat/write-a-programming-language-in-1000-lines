@@ -1,33 +1,31 @@
 /**
  * @file main.cpp
  * @brief 程序入口文件
- * 
+ *
  * 负责初始化程序环境、解析命令行参数、启动repl
  * @author azhz1107cat
  * @date 20250-25
  */
 
-/**
- * 提供命令行帮助信息函数
- */
+#include "bigint.hpp"
+#include "ui/repl.hpp"
+
+#include <cstdio>
+/* 提供命令行帮助信息函数 */
 void show_help(const char* prog_name);
 
-/**
- * 命令行参数解析函数
- */
+/* 命令行参数解析函数 */
 void args_parser(int argc, char* argv[]);
 
-/**
+/*
  * 主函数
  */
-int main(int argc, char* argv[]) {
+int main(const int argc, char* argv[]) {
     args_parser(argc, argv);
     return 0;
 }
 
-/**
- * 提供命令行帮助信息函数
- */
+/* 提供命令行帮助信息函数 */
 void show_help(const char* prog_name) {
     printf("%s [指令] [参数]\n", prog_name);
     printf("指令:\n");
@@ -45,13 +43,13 @@ void show_help(const char* prog_name) {
  * @param argv 命令行参数数组（来自main函数）
  * @return void
  */
-void args_parser(int argc, char* argv[]) {
+void args_parser(const int argc, char* argv[]) {
     // 程序名称
     const char* prog_name = argv[0];
 
     // 无参数：默认启动REPL
     if (argc == 1) {
-        Repl repl;
+      ui::Repl repl;
         return;
     }
 
@@ -60,10 +58,10 @@ void args_parser(int argc, char* argv[]) {
         std::string cmd = argv[1];
         if (cmd == "version") {
             // 显示版本
-            printf("kiz version %s\n", KIZ_VERSION);
+            printf("kiz version %s\n", "KIZ_VERSION");
         } else if (cmd == "repl") {
             // 显式启动REPL
-            Repl repl;
+          ui::Repl repl;
         } else if (cmd == "help") {
             // 显示帮助信息
             show_help(prog_name);

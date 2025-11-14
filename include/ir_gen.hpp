@@ -6,12 +6,19 @@
  * @date 2025-10-25
  */
 
-#pragma once  
+#pragma once
+#include "ast.hpp"
+#include "models.hpp"
+
+#include <memory>
+#include <stack>
+#include <vector>
+
 
 namespace kiz {
 
 class IRGenerator {
-    std::unique_ptr<AstNode> ast;
+    std::unique_ptr<ASTNode> ast;
     std::stack<std::string> block_stack;
 
     std::vector<std::string> curr_names;
@@ -33,7 +40,6 @@ public:
 protected:
     model::CodeObject* make_code_obj();
     model::Int* make_int_obj();
-    model::Dec* make_dec_obj();
     model::Rational* make_rational_obj();
     model::String* make_string_obj();
 };
