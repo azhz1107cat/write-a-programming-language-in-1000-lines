@@ -10,7 +10,7 @@ end
 
 x = 100
 y = 0.1 + 0.2
-print y==0.3
+print y == 0.3
 
 print x
 hello()
