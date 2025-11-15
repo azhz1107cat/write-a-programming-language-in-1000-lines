@@ -21,7 +21,7 @@ if user_input == "Y"
 else if user_input = "N"
     print "You print N"
 else
-    print "You print "+user_input
+    print "You print " + user_input
 end
 
 # 字典
@@ -52,5 +52,6 @@ fn a
     print outer
 end
 
-a()
+aa = a
+aa()
 print x

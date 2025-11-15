@@ -15,12 +15,11 @@
 namespace kiz {
 
 class Parser {
-    const std::vector<Token> tokens_;
+    std::vector<Token> tokens_;
     long long unsigned int curr_tok_idx_ = 0;
 public:
-    explicit Parser(const std::vector<Token> &tokens);
-  Token skip_token();
-  ~Parser() = default;
+    explicit Parser(const std::vector<Token>& tokens);
+    ~Parser() = default;
 
     Token skip_token(const std::string& want_skip = "");
     void skip_end_of_ln();
@@ -32,6 +31,7 @@ public:
     // parse stmt
     std::unique_ptr<Statement> parse_stmt();
     std::unique_ptr<BlockStmt> parse_block();
+    std::unique_ptr<IfStmt> parse_if();
 
     // parse expr
     std::unique_ptr<Expression> parse_expression();
