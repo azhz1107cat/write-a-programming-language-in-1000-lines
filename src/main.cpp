@@ -90,6 +90,7 @@ void args_parser(const int argc, char* argv[]) {
     // 无参数：默认启动REPL
     if (argc == 1) {
         ui::Repl repl;
+        repl.loop();
         return;
     }
 

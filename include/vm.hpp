@@ -12,6 +12,9 @@
 
 #include <stack>
 
+#include "project_debugger.hpp"
+#include "../libs/builtins/builtins.hpp"
+
 namespace model {
 class Module;
 class CodeObject;
@@ -25,13 +28,6 @@ enum class Opcode;
 struct VmState{
     model::Object* stack_top;
     deps::HashMap<model::Object*> locals;
-}; 
-
-struct Instruction {
-    Opcode opc;
-    std::vector<size_t> opn_list;
-    size_t start_lineno;
-    size_t end_lineno;
 };
 
 struct CallFrame {
@@ -52,13 +48,48 @@ class Vm {
     size_t pc_ = 0;
     std::vector<Instruction> code_list_;
     bool running_ = false;
+    deps::HashMap<model::Object*> builtins;
 
     const std::string& file_path;
 public:
-    explicit Vm(const std::string& file_path) : file_path(file_path) {}
+    explicit Vm(const std::string& file_path) : file_path(file_path) {
+        DEBUG_OUTPUT("registe builtins");
+        builtins.insert("print", new model::CppFunction(builtin_objects::print));
+    }
 
     VmState load(const model::Module* src_module);
-    void exec(Instruction introduction);
+    void exec(const Instruction& instruction);
+    void exec_ADD(const Instruction& instruction);
+    void exec_SUB(const Instruction& instruction);
+    void exec_MUL(const Instruction& instruction);
+    void exec_DIV(const Instruction& instruction);
+    void exec_MOD(const Instruction& instruction);
+    void exec_POW(const Instruction& instruction);
+    void exec_NEG(const Instruction& instruction);
+    void exec_EQ(const Instruction& instruction);
+    void exec_GT(const Instruction& instruction);
+    void exec_LT(const Instruction& instruction);
+    void exec_AND(const Instruction& instruction);
+    void exec_NOT(const Instruction& instruction);
+    void exec_OR(const Instruction& instruction);
+    void exec_IS(const Instruction& instruction);
+    void exec_IN(const Instruction& instruction);
+    void exec_MAKE_LIST(const Instruction& instruction);
+    void exec_CALL(const Instruction& instruction);
+    void exec_RET(const Instruction& instruction);
+    void exec_GET_ATTR(const Instruction& instruction);
+    void exec_SET_ATTR(const Instruction& instruction);
+    void exec_LOAD_VAR(const Instruction& instruction);
+    void exec_LOAD_CONST(const Instruction& instruction);
+    void exec_SET_GLOBAL(const Instruction& instruction);
+    void exec_SET_LOCAL(const Instruction& instruction);
+    void exec_SET_NONLOCAL(const Instruction& instruction);
+    void exec_JUMP(const Instruction& instruction);
+    void exec_JUMP_IF_FALSE(const Instruction& instruction);
+    void exec_THROW(const Instruction& instruction);
+    void exec_POP_TOP(const Instruction& instruction);
+    void exec_SWAP(const Instruction& instruction);
+    void exec_COPY_TOP(const Instruction& instruction);
 };
 
 } // namespace kiz

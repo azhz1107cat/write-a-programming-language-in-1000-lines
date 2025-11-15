@@ -11,11 +11,21 @@
 #include <functional>
 #include <utility>
 
-#include "vm.hpp"
+#include "opcode.hpp"
 #include "../deps/hashmap.hpp"
 #include "../deps/bigint.hpp"
 #include "../deps/rational.hpp"
 
+namespace kiz {
+
+struct Instruction {
+    Opcode opc;
+    std::vector<size_t> opn_list;
+    size_t start_lineno;
+    size_t end_lineno;
+};
+
+}
 
 namespace model {
 
@@ -34,7 +44,7 @@ public:
             delete this;
         }
     }
-    virtual std::string to_string() const = 0;
+    [[nodiscard]] virtual std::string to_string() const = 0;
     virtual ~Object() {
         auto kv_list = attrs.to_vector();
         for (auto& [key, obj] : kv_list) {

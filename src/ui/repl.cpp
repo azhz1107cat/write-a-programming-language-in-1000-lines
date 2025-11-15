@@ -45,6 +45,7 @@ void Repl::eval_and_print(const std::string& cmd) {
     auto ir = ir_gen.gen(std::move(ast));
     auto [stack_top, locals] = vm.load(ir);
     std::cout << stack_top->to_string() << std::endl;
+    stack_top->del_ref();
 }
 
 } // namespace ui

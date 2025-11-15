@@ -186,20 +186,31 @@ void IRGenerator::gen_expr(Expression* expr) {
     }
 }
 
-void IRGenerator::gen_fn_call(CallExpr* call_expr) {
+    void IRGenerator::gen_fn_call(CallExpr* call_expr) {
     assert(call_expr && "gen_fn_call: 函数调用节点为空");
-    // 生成函数参数IR（参数按顺序压栈）
+    size_t arg_count = call_expr->args.size();
+
+    // 生成所有参数的IR
     for (auto& arg : call_expr->args) {
         gen_expr(arg.get());
     }
 
-    // 生成函数对象IR（栈顶为函数对象）
+    // 生成 OP_MAKE_LIST 指令：将栈顶 arg_count 个元素打包成 List，压回栈
+    curr_code_list.emplace_back(
+        Opcode::MAKE_LIST,
+        std::vector<size_t>{arg_count},  // 操作数：需要打包的元素个数
+        call_expr->start_ln,
+        call_expr->end_ln
+    );
+    curr_lineno_map.emplace_back(curr_code_list.size() - 1, call_expr->start_ln);
+
+    // 生成函数对象的IR（压到栈顶）
     gen_expr(call_expr->callee.get());
 
-    // 生成CALL指令（简化：操作数为参数个数）
+    // 生成 CALL 指令（操作数保留参数个数，用于 Function 校验参数数量）
     curr_code_list.emplace_back(
         Opcode::CALL,
-        std::vector<size_t>{call_expr->args.size()},
+        std::vector<size_t>{arg_count},  // 仍传参数个数（Function 需校验 List 元素个数）
         call_expr->start_ln,
         call_expr->end_ln
     );
