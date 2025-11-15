@@ -34,10 +34,8 @@ public:
             delete this;
         }
     }
-    std::string to_string() {
-        return "<Object>";
-    }
-    ~Object() {
+    virtual std::string to_string() const = 0;
+    virtual ~Object() {
         auto kv_list = attrs.to_vector();
         for (auto& [key, obj] : kv_list) {
             if (obj != nullptr) obj->del_ref();
@@ -56,6 +54,10 @@ public:
         const std::vector<std::string>& names,
         const std::vector<std::tuple<size_t, size_t>>& lineno_map
     ) : code(code), consts(consts), names(names), lineno_map(lineno_map) {}
+
+    [[nodiscard]] std::string to_string() const override {
+        return "[CodeObject: consts=" + std::to_string(consts.size()) + ", names=" + std::to_string(names.size()) + "]";
+    }
 };
 
 class Module : public Object {
@@ -65,6 +67,10 @@ public:
     deps::HashMap<Object*> attrs;
     explicit Module(std::string name, CodeObject *code) : name(std::move(name)), code(code) {
         code->make_ref();
+    }
+
+    [[nodiscard]] std::string to_string() const override {
+        return "[Module: name=\"" + name + "\"]";
     }
 };
 
@@ -77,6 +83,10 @@ public:
     ) : name(std::move(name)), code(code), argc(argc) {
         code->make_ref();
     }
+
+    [[nodiscard]] std::string to_string() const override {
+        return "[Function: name=\"" + name + "\", argc=" + std::to_string(argc) + "]";
+    }
 };
 
 class Int : public Object {
@@ -84,7 +94,7 @@ public:
     deps::BigInt val;
     explicit Int(deps::BigInt val) : val(std::move(val)) {}
     explicit Int() : val(deps::BigInt(0)) {}
-    [[nodiscard]] std::string to_string() const {
+    [[nodiscard]] std::string to_string() const override {
         return val.to_string();
     }
 };
@@ -93,24 +103,48 @@ class Rational : public Object {
 public:
     deps::Rational val;
     explicit Rational(const deps::Rational& val) : val(val) {}
+    [[nodiscard]] std::string to_string() const override {
+        return val.numerator.to_string() + "/" + val.denominator.to_string();
+    }
 };
 
 class String : public Object {
 public:
     std::string val;
     explicit String(std::string val) : val(std::move(val)) {}
+    [[nodiscard]] std::string to_string() const override {
+        return "\"" + val + "\"";
+    }
 };
 
 class List : public Object {
 public:
     std::vector<Object*> val;
     explicit List(std::vector<Object*> val) : val(std::move(val)) {}
+    [[nodiscard]] std::string to_string() const override {
+        std::string result = "[";
+        for (size_t i = 0; i < val.size(); ++i) {
+            if (val[i] != nullptr) {
+                result += val[i]->to_string();  // 递归调用元素的 to_string
+            } else {
+                result += "nil";
+            }
+            if (i != val.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += "]";
+        return result;
+    }
 };
 
 class CppFunction : public Object {
 public:
     std::function<Object*(List*)> func;
     explicit CppFunction(std::function<Object*(List*)> func) : func(std::move(func)) {}
+    [[nodiscard]] std::string to_string() const override {
+        return "[CppFunction]";
+    }
 };
 
 class Dictionary : public Object {
@@ -118,7 +152,24 @@ public:
     deps::HashMap<Object*> attrs;
     explicit Dictionary(const deps::HashMap<Object*>& attrs) : attrs(attrs) {}
     explicit Dictionary() {
-        deps::HashMap<Object*> attrs{};
+        this->attrs = deps::HashMap<Object*>{};
+    }
+
+    [[nodiscard]] std::string to_string() const override {
+        std::string result = "{";
+        auto kv_list = attrs.to_vector();
+        for (size_t i = 0; i < kv_list.size(); ++i) {
+            auto& [key, val] = kv_list[i];
+
+            std::string val_str = (val != nullptr) ? val->to_string() : "nil";
+
+            result += key + ": " + val_str;
+            if (i != kv_list.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += "}";
+        return result;
     }
 };
 
@@ -126,11 +177,17 @@ class Bool : public Object {
 public:
     bool val;
     explicit Bool(const bool val) : val(val) {}
+    [[nodiscard]] std::string to_string() const override {
+        return val ? "true" : "false";
+    }
 };
 
 class Nil : public Object {
 public:
     explicit Nil() : Object() {}
+    [[nodiscard]] std::string to_string() const override {
+        return "nil";
+    }
 };
 
 };
