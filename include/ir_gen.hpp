@@ -34,7 +34,7 @@ public:
     static size_t get_or_add_name(std::vector<std::string>& names, const std::string& name);
     static size_t get_or_add_const(std::vector<model::Object*>& consts, model::Object* obj);
 
-    [[nodiscard]] static model::Module* IRGenerator::gen_mod(
+    [[nodiscard]] static model::Module* gen_mod(
         const std::string& module_name,
         const std::vector<std::string>& names,
         const std::vector<Instruction>& code_list,

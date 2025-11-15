@@ -474,15 +474,27 @@ public:
         return result_abs;
     }
 
-    // ========================= 输出运算符（同前） =========================
-    friend std::ostream& operator<<(std::ostream& os, const BigInt& num) {
-        if (num.is_negative_) {
-            os << '-';
+    // ========================= to_string =========================
+    [[nodiscard]] std::string to_string() const {
+        std::string result;
+
+        // 边界处理：若 digits_ 为空（未初始化/零值），直接返回 "0"
+        if (digits_.empty()) {
+            return "0";
         }
-        for (auto it = num.digits_.rbegin(); it != num.digits_.rend(); ++it) {
-            os << static_cast<char>('0' + *it);
+
+        // 处理负数符号
+        if (is_negative_) {
+            result += '-';
         }
-        return os;
+
+        // 逆序遍历
+        for (auto it = digits_.rbegin(); it != digits_.rend(); ++it) {
+            // *it 是 0-9 的数字，+'0' 转换为对应的 ASCII 字符（如 3 → '3'）
+            result += static_cast<char>('0' + *it);
+        }
+
+        return result;
     }
 };
 

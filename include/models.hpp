@@ -34,7 +34,7 @@ public:
             delete this;
         }
     }
-    static std::string to_string() {
+    std::string to_string() {
         return "<Object>";
     }
     ~Object() {
@@ -84,6 +84,9 @@ public:
     deps::BigInt val;
     explicit Int(deps::BigInt val) : val(std::move(val)) {}
     explicit Int() : val(deps::BigInt(0)) {}
+    [[nodiscard]] std::string to_string() const {
+        return val.to_string();
+    }
 };
 
 class Rational : public Object {

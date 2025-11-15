@@ -44,7 +44,7 @@ void Repl::eval_and_print(const std::string& cmd) {
     auto ast = parser.parse(tokens);
     auto ir = ir_gen.gen(std::move(ast));
     auto [stack_top, locals] = vm.load(ir);
-    std::cout << model::Object::to_string() << std::endl;
+    std::cout << stack_top->to_string() << std::endl;
 }
 
 } // namespace ui
