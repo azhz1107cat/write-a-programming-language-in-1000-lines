@@ -28,7 +28,7 @@ void register_keywords() {
     keywords["return"] = TokenType::Return;
     keywords["import"] = TokenType::Import;
     keywords["break"] = TokenType::Break;
-    keywords["next"] = TokenType::Continue;
+    keywords["next"] = TokenType::Next;
     keywords["dict"] = TokenType::Dict;
     keywords["end"] = TokenType::End;
     keywords["true"] = TokenType::True;

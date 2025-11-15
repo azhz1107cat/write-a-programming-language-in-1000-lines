@@ -5,12 +5,19 @@
 
 namespace kiz {
 
-model::Module* IRGenerator::gen_mod(const std::string& module_name) const {
+model::Module* IRGenerator::gen_mod(
+    const std::string& module_name,
+    const std::vector<std::string>& names,
+    const std::vector<Instruction>& code_list,
+    const std::vector<model::Object*>& consts,
+    const std::vector<std::tuple<size_t, size_t>>& lineno_map
+)
+{
     const auto code_obj = new model::CodeObject(
-        curr_code_list,
-        curr_const,
-        curr_names,
-        curr_lineno_map
+        code_list,
+        consts,
+        names,
+        lineno_map
     );
     const auto module_obj = new model::Module(
         module_name,
@@ -25,14 +32,43 @@ void IRGenerator::gen_block(const BlockStmt* block) {
     if (!block) return;
     for (auto& stmt : block->statements) {
         switch (stmt->ast_type) {
-            case AstType::VarDeclStmt: {
+            case AstType::AssignStmt: {
                 // 变量声明：生成初始化表达式IR + 存储变量指令
-                const auto* var_decl = dynamic_cast<VarDeclStmt*>(stmt.get());
+                const auto* var_decl = dynamic_cast<AssignStmt*>(stmt.get());
                 gen_expr(var_decl->expr.get()); // 生成初始化表达式IR
                 const size_t name_idx = get_or_add_name(curr_names, var_decl->name);
 
                 curr_code_list.emplace_back(
                     Opcode::SET_LOCAL,
+                    std::vector<size_t>{name_idx},
+                    stmt->start_ln,
+                    stmt->end_ln
+                );
+                break;
+            }
+            case AstType::NonlocalAssignStmt: {
+                // 变量声明：生成初始化表达式IR + 存储变量指令
+                const auto* var_decl = dynamic_cast<AssignStmt*>(stmt.get());
+                gen_expr(var_decl->expr.get()); // 生成初始化表达式IR
+                const size_t name_idx = get_or_add_name(curr_names, var_decl->name);
+
+                curr_code_list.emplace_back(
+                    Opcode::SET_NONLOCAL,
+                    std::vector<size_t>{name_idx},
+                    stmt->start_ln,
+                    stmt->end_ln
+                );
+                break;
+            }
+
+            case AstType::GlobalAssignStmt: {
+                // 变量声明：生成初始化表达式IR + 存储变量指令
+                const auto* var_decl = dynamic_cast<AssignStmt*>(stmt.get());
+                gen_expr(var_decl->expr.get()); // 生成初始化表达式IR
+                const size_t name_idx = get_or_add_name(curr_names, var_decl->name);
+
+                curr_code_list.emplace_back(
+                    Opcode::SET_GLOBAL,
                     std::vector<size_t>{name_idx},
                     stmt->start_ln,
                     stmt->end_ln
@@ -65,7 +101,7 @@ void IRGenerator::gen_block(const BlockStmt* block) {
                 } else {
                     // 无返回值时压入Nil常量
                     auto* nil = new model::Nil();
-                    const size_t const_idx = get_or_add_const(curr_const, nil);
+                    const size_t const_idx = get_or_add_const(curr_consts, nil);
                     curr_code_list.emplace_back(
                         Opcode::LOAD_CONST,
                         std::vector<size_t>{const_idx},
@@ -91,9 +127,9 @@ void IRGenerator::gen_block(const BlockStmt* block) {
                     stmt->end_ln
                 );
                 break;
-            case AstType::ContinueStmt:
+            case AstType::NextStmt:
                 // Continue语句：跳转到循环条件位置（依赖block_stack记录循环入口）
-                assert(block_stack.size() >= 2 && "ContinueStmt: 无活跃循环块");
+                assert(block_stack.size() >= 2 && "NextStmt: 无活跃循环块");
                 curr_code_list.emplace_back(
                     Opcode::JUMP,
                     std::vector<size_t>{block_stack.top()},
@@ -107,18 +143,18 @@ void IRGenerator::gen_block(const BlockStmt* block) {
     }
 }
 
-void IRGenerator::gen_fn_decl(FuncDefStmt* fn_decl) {
+void IRGenerator::gen_fn_decl(FnDeclExpr* fn_decl) {
     assert(fn_decl && "gen_fn_decl: 函数声明节点为空");
     // 临时保存当前模块级代码容器（函数体为独立作用域）
     auto save_code = curr_code_list;
     auto save_names = curr_names;
-    auto save_const = curr_const;
+    auto save_const = curr_consts;
     auto save_lineno = curr_lineno_map;
 
     // 初始化函数级代码容器
     curr_code_list.clear();
     curr_names.clear();
-    curr_const.clear();
+    curr_consts.clear();
     curr_lineno_map.clear();
 
     // 添加函数参数到变量表
@@ -132,7 +168,7 @@ void IRGenerator::gen_fn_decl(FuncDefStmt* fn_decl) {
     // 确保函数有返回值（无显式return则返回Nil）
     if (curr_code_list.empty() || curr_code_list.back().opc != Opcode::RET) {
         const auto nil = new model::Nil();
-        const size_t nil_idx = get_or_add_const(curr_const, nil);
+        const size_t nil_idx = get_or_add_const(curr_consts, nil);
         curr_code_list.emplace_back(
             Opcode::LOAD_CONST,
             std::vector<size_t>{nil_idx},
@@ -160,11 +196,11 @@ void IRGenerator::gen_fn_decl(FuncDefStmt* fn_decl) {
     // 恢复模块级代码容器
     curr_code_list = save_code;
     curr_names = save_names;
-    curr_const = save_const;
+    curr_consts = save_const;
     curr_lineno_map = save_lineno;
 
     // 将函数对象加入模块常量池并存储为全局变量
-    size_t fn_const_idx = get_or_add_const(curr_const, fn);
+    size_t fn_const_idx = get_or_add_const(curr_consts, fn);
     size_t fn_name_idx = get_or_add_name(curr_names, fn_decl->name);
 
     // 加载函数对象 + 存储为全局变量
@@ -175,7 +211,7 @@ void IRGenerator::gen_fn_decl(FuncDefStmt* fn_decl) {
         fn_decl->start_ln
     );
     curr_code_list.emplace_back(
-        Opcode::SET_GLOBAL,
+        Opcode::SET_LOCAL,
         std::vector<size_t>{fn_name_idx},
         fn_decl->start_ln,
         fn_decl->end_ln
@@ -234,7 +270,7 @@ void IRGenerator::gen_while(WhileStmt* while_stmt) {
     gen_expr(while_stmt->condition.get());
 
     // 生成JUMP_IF_FALSE指令（目标：循环结束位置，占位）
-    size_t jump_out_idx = curr_code_list.size();
+    const size_t jump_out_idx = curr_code_list.size();
     curr_code_list.emplace_back(
         Opcode::JUMP_IF_FALSE,
         std::vector<size_t>{0},

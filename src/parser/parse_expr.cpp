@@ -213,7 +213,7 @@ std::unique_ptr<Expression> Parser::parse_primary() {
         skip_token("{");
         auto stmt = parse_block();
         skip_token("}");
-        return std::make_unique<LambdaDeclExpr>("<lambda>", std::move(params),std::move(stmt));
+        return std::make_unique<FnDeclExpr>("<lambda>", std::move(params),std::move(stmt));
     }
     if (tok.type == TokenType::Pipe) {
         std::vector<std::string> params;
@@ -226,7 +226,7 @@ std::unique_ptr<Expression> Parser::parse_primary() {
         std::vector<std::unique_ptr<Statement>> stmts;
         stmts.emplace_back(std::make_unique<ReturnStmt>(std::move(expr)));
 
-        return std::make_unique<LambdaDeclExpr>(
+        return std::make_unique<FnDeclExpr>(
             "lambda",
             std::move(params),
             std::make_unique<BlockStmt>(std::move(stmts))

@@ -46,20 +46,25 @@ model::Module* IRGenerator::gen(std::unique_ptr<BlockStmt> ast_into) {
     // 初始化模块级代码容器
     curr_code_list.clear();
     curr_names.clear();
-    curr_const.clear();
+    curr_consts.clear();
     curr_lineno_map.clear();
 
     // 处理模块顶层节点
     gen_block(root_block);
 
-    return gen_mod(file_path);
+    return gen_mod(file_path,
+        curr_names,
+        curr_code_list,
+        curr_consts,
+        curr_lineno_map
+    );
 }
 
 model::CodeObject* IRGenerator::make_code_obj() const {
     DEBUG_OUTPUT("making code object...");
     // 复制常量池（管理引用计数）
     std::vector<model::Object*> consts;
-    for (auto* obj : curr_const) {
+    for (auto* obj : curr_consts) {
         obj->make_ref();
         consts.emplace_back(obj);
     }

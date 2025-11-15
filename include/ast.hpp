@@ -18,15 +18,15 @@ enum class AstType {
     StringExpr, NumberExpr, ListExpr, IdentifierExpr,
     BinaryExpr, UnaryExpr,
     CallExpr,
-    GetMemberExpr, SetMemberExpr, GetItemExpr,
-    LambdaDeclExpr, DictDeclExpr,
+    GetMemberExpr, SetMemberExpr, GetItemExpr, SetItemExpr,
+    FuncDeclExpr, DictDeclExpr,
 
     // 语句类型（对应 Statement 子类）
-    VarDeclStmt, AssignStmt,
-    BlockStmt, IfStmt, WhileStmt, FuncDefStmt,
+    AssignStmt, NonlocalAssignStmt, GlobalAssignStmt,
+    BlockStmt, IfStmt, WhileStmt,
     ReturnStmt, ImportStmt,
     NullStmt, ExprStmt,
-    BreakStmt, ContinueStmt
+    BreakStmt, NextStmt
 };
 
 // AST 基类
@@ -119,16 +119,6 @@ struct UnaryExpr final :  Expression {
     }
 };
 
-// 变量声明
-struct VarDeclStmt final :  Statement {
-    std::string name;
-    std::unique_ptr<Expression> expr;
-    VarDeclStmt(std::string n, std::unique_ptr<Expression> e)
-        : name(std::move(n)), expr(std::move(e)) {
-        this->ast_type = AstType::VarDeclStmt;
-    }
-};
-
 // 赋值
 struct AssignStmt final :  Statement {
     std::string name;
@@ -136,6 +126,25 @@ struct AssignStmt final :  Statement {
     AssignStmt(std::string n, std::unique_ptr<Expression> e)
         : name(std::move(n)), expr(std::move(e)) {
         this->ast_type = AstType::AssignStmt;
+    }
+};
+
+// nonlocal赋值
+struct NonlocalAssignStmt final :  Statement {
+    std::string name;
+    std::unique_ptr<Expression> expr;
+    NonlocalAssignStmt(std::string n, std::unique_ptr<Expression> e)
+    : name(std::move(n)), expr(std::move(e)) {
+        this->ast_type = AstType::NonlocalAssignStmt;
+    }
+};
+// global赋值
+struct GlobalAssignStmt final :  Statement {
+    std::string name;
+    std::unique_ptr<Expression> expr;
+    GlobalAssignStmt(std::string n, std::unique_ptr<Expression> e)
+    : name(std::move(n)), expr(std::move(e)) {
+        this->ast_type = AstType::GlobalAssignStmt;
     }
 };
 
@@ -166,17 +175,6 @@ struct WhileStmt final :  Statement {
     WhileStmt(std::unique_ptr<Expression> cond, std::unique_ptr<BlockStmt> b)
         : condition(std::move(cond)), body(std::move(b)) {
         this->ast_type = AstType::WhileStmt;
-    }
-};
-
-// 函数定义
-struct FuncDefStmt final :  Statement {
-    std::string name;
-    std::vector<std::string> params;
-    std::unique_ptr<BlockStmt> body;
-    FuncDefStmt(std::string n, const std::vector<std::string>& p, std::unique_ptr<BlockStmt> b)
-        : name(std::move(n)), params(p), body(std::move(b)) {
-        this->ast_type = AstType::FuncDefStmt;
     }
 };
 
@@ -225,14 +223,14 @@ struct GetItemExpr final :  Expression {
 };
 
 // 声明匿名函数
-struct LambdaDeclExpr final :  Expression {
+struct FnDeclExpr final :  Expression {
     std::string name;
     std::vector<std::string> params;
     std::unique_ptr<BlockStmt> body;
-    LambdaDeclExpr(std::string n, std::vector<std::string> p, std::unique_ptr<BlockStmt> b)
+    FnDeclExpr(std::string n, std::vector<std::string> p, std::unique_ptr<BlockStmt> b)
         : name(std::move(n)), params(std::move(p)), body(std::move(b)) {
-        this->ast_type = AstType::LambdaDeclExpr;
-        this->type_info = std::make_unique<TypeInfo>("lambda_expr");
+        this->ast_type = AstType::FuncDeclExpr;
+        this->type_info = std::make_unique<TypeInfo>("function");
     }
 };
 
@@ -280,9 +278,9 @@ struct BreakStmt final :  Statement {
 };
 
 // continue 语句
-struct ContinueStmt final :  Statement {
-    ContinueStmt() {
-        this->ast_type = AstType::ContinueStmt;
+struct NextStmt final :  Statement {
+    NextStmt() {
+        this->ast_type = AstType::NextStmt;
     }
 };
 

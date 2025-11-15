@@ -18,8 +18,8 @@ namespace kiz {
 // Token 类型与结构体
 enum class TokenType {
     // 关键字
-    Var, Func, If, Else, While, Return, Import, Break, Continue, Dict,
-    True, False, Null, End,
+    Var, Func, If, Else, While, Return, Import, Break, Dict,
+    True, False, Null, End, Next, Nonlocal, Global,
     // 标识符
     Identifier,
     // 赋值运算符

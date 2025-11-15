@@ -23,7 +23,7 @@ class IRGenerator {
 
     std::vector<std::string> curr_names;
     std::vector<Instruction> curr_code_list;
-    std::vector<model::Object*> curr_const;
+    std::vector<model::Object*> curr_consts;
     std::vector<std::tuple<size_t, size_t>> curr_lineno_map;
 
     const std::string& file_path;
@@ -34,9 +34,15 @@ public:
     static size_t get_or_add_name(std::vector<std::string>& names, const std::string& name);
     static size_t get_or_add_const(std::vector<model::Object*>& consts, model::Object* obj);
 
-    [[nodiscard]] model::Module* gen_mod(const std::string& module_name) const;
+    [[nodiscard]] static model::Module* IRGenerator::gen_mod(
+        const std::string& module_name,
+        const std::vector<std::string>& names,
+        const std::vector<Instruction>& code_list,
+        const std::vector<model::Object*>& consts,
+        const std::vector<std::tuple<size_t, size_t>>& lineno_map
+    );
     void gen_block(const BlockStmt* block);
-    void gen_fn_decl(FuncDefStmt* fn_decl);
+    void gen_fn_decl(FnDeclExpr* fn_decl);
 
     void gen_literal(Expression* expr);
     void gen_fn_call(CallExpr* expr);

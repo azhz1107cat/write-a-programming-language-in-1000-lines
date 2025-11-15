@@ -115,18 +115,18 @@ void IRGenerator::gen_expr(Expression* expr) {
             );
             break;
         }
-        case AstType::LambdaDeclExpr: {
+        case AstType::FuncDeclExpr: {
             // 匿名函数：同普通函数声明，生成函数对象后加载
-            auto* lambda = dynamic_cast<LambdaDeclExpr*>(expr);
+            auto* lambda = dynamic_cast<FnDeclExpr*>(expr);
             // 临时保存当前模块级代码容器
             auto save_code = curr_code_list;
             auto save_names = curr_names;
-            auto save_const = curr_const;
+            auto save_const = curr_consts;
 
             // 初始化lambda代码容器
             curr_code_list.clear();
             curr_names.clear();
-            curr_const.clear();
+            curr_consts.clear();
 
             // 添加参数到lambda变量表
             for (const auto& param : lambda->params) {
@@ -137,7 +137,7 @@ void IRGenerator::gen_expr(Expression* expr) {
             // 确保lambda有返回值（无显式返回则返回Nil）
             if (curr_code_list.empty() || curr_code_list.back().opc != Opcode::RET) {
                 const auto nil = new model::Nil();
-                const size_t nil_idx = get_or_add_const(curr_const, nil);
+                const size_t nil_idx = get_or_add_const(curr_consts, nil);
                 curr_code_list.emplace_back(
                 Opcode::LOAD_CONST,
                 std::vector<size_t>{nil_idx},
@@ -154,7 +154,7 @@ void IRGenerator::gen_expr(Expression* expr) {
 
             const auto code_obj = new model::CodeObject(
                 curr_code_list,
-                curr_const,
+                curr_consts,
                 curr_names,
                 curr_lineno_map
             );
@@ -169,10 +169,10 @@ void IRGenerator::gen_expr(Expression* expr) {
             // 恢复模块级代码容器
             curr_code_list = save_code;
             curr_names = save_names;
-            curr_const = save_const;
+            curr_consts = save_const;
 
             // 加载lambda函数对象
-            const size_t fn_const_idx = get_or_add_const(curr_const, lambda_fn);
+            const size_t fn_const_idx = get_or_add_const(curr_consts, lambda_fn);
             curr_code_list.emplace_back(
                 Opcode::LOAD_CONST,
                 std::vector<size_t>{fn_const_idx},
@@ -213,8 +213,8 @@ void IRGenerator::gen_dict(DictDeclExpr* expr) {
     for (auto& [key, val_expr] : expr->init_list) {
         gen_expr(val_expr.get());
         // 弹出值存入字典（简化：假设栈顶为值，键为字符串常量）
-        size_t val_const_idx = curr_const.size() - 1;
-        model::Object* val = curr_const[val_const_idx];
+        size_t val_const_idx = curr_consts.size() - 1;
+        model::Object* val = curr_consts[val_const_idx];
         val->make_ref();
 
         // 键转换为String对象
@@ -226,7 +226,7 @@ void IRGenerator::gen_dict(DictDeclExpr* expr) {
     }
 
     // 将字典对象加入常量池并加载
-    size_t dict_const_idx = get_or_add_const(curr_const, dict);
+    size_t dict_const_idx = get_or_add_const(curr_consts, dict);
     curr_code_list.emplace_back(
         Opcode::LOAD_CONST,
         std::vector<size_t>{dict_const_idx},
@@ -253,7 +253,7 @@ void IRGenerator::gen_literal(Expression* expr) {
 
     // 生成LOAD_CONST指令（加载字面量常量）
     assert(const_obj && "gen_literal: 常量对象创建失败");
-    size_t const_idx = get_or_add_const(curr_const, const_obj);
+    size_t const_idx = get_or_add_const(curr_consts, const_obj);
     curr_code_list.emplace_back(
         Opcode::LOAD_CONST,
         std::vector<size_t>{const_idx},

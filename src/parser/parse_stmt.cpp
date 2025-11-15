@@ -6,11 +6,14 @@
 #include <memory>
 #include <vector>
 
+#include "project_debugger.hpp"
 #include "ui/color.hpp"
 
 namespace kiz {
+
 // parse_block
 std::unique_ptr<BlockStmt> Parser::parse_block() {
+    DEBUG_OUTPUT("parsing block");
     std::vector<std::unique_ptr<Statement>> block_stmts;
     // 循环解析块内语句，直到遇到end关键字（替代原RBrace）
     while (curr_tok_idx_ < tokens_.size()) {
@@ -43,6 +46,7 @@ std::unique_ptr<BlockStmt> Parser::parse_block() {
 
 // parse_if实现
 std::unique_ptr<IfStmt> Parser::parse_if() {
+    DEBUG_OUTPUT("parsing if");
     // 解析if条件表达式
     auto cond_expr = parse_expression();
     if (!cond_expr) {
@@ -74,6 +78,7 @@ std::unique_ptr<IfStmt> Parser::parse_if() {
 
 // parse_stmt实现
 std::unique_ptr<Statement> Parser::parse_stmt() {
+    DEBUG_OUTPUT("parsing stmt");
     const Token curr_tok = curr_token();
 
     // 解析if语句
@@ -84,6 +89,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
 
     // 解析while语句（适配end结尾）
     if (curr_tok.type == TokenType::While) {
+        DEBUG_OUTPUT("parsing while");
         skip_token("while");
         // 解析循环条件表达式
         auto cond_expr = parse_expression();
@@ -101,7 +107,8 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
 
     // 解析函数定义（新语法：fn x() end）
     if (curr_tok.type == TokenType::Func) {
-        skip_token("func");
+        DEBUG_OUTPUT("parsing function");
+        skip_token("fn");
         // 读取函数名（必须是标识符）
         const Token func_name_tok = skip_token();
         if (func_name_tok.type != TokenType::Identifier) {
@@ -146,52 +153,17 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         auto func_body = parse_block();  // 函数体为非全局作用域
 
         // 生成函数定义语句节点
-        return std::make_unique<FuncDefStmt>(
+        return std::make_unique<ExprStmt>(std::make_unique<FnDeclExpr>(
             func_name,
             std::move(func_params),
             std::move(func_body)
-        );
+        ));
     }
 
-    // 解析变量声明（var x = expr;）
-    if (curr_tok.type == TokenType::Var) {
-        skip_token("var");
-        // 读取变量名（必须是标识符）
-        const Token var_name_tok = skip_token();
-        if (var_name_tok.type != TokenType::Identifier) {
-            std::cerr << Color::RED
-                      << "[Syntax Error] Variable name must be an identifier, got '"
-                      << var_name_tok.text << "' (Line: " << var_name_tok.lineno << ")"
-                      << Color::RESET << std::endl;
-            assert(false && "Invalid variable name");
-        }
-        const std::string var_name = var_name_tok.text;
-
-        // 解析赋值符号
-        if (curr_token().type != TokenType::Assign) {
-            std::cerr << Color::RED
-                      << "[Syntax Error] Expected '=' in variable declaration, got '"
-                      << curr_token().text << "'"
-                      << Color::RESET << std::endl;
-            assert(false && "Missing '=' in var declaration");
-        }
-        skip_token("=");
-
-        // 解析赋值表达式
-        auto init_expr = parse_expression();
-        if (!init_expr) {
-            std::cerr << Color::RED
-                      << "[Syntax Error] Variable declaration missing initial value"
-                      << Color::RESET << std::endl;
-            assert(false && "Invalid var initial expression");
-        }
-
-        skip_end_of_ln();  // 跳过语句结束符
-        return std::make_unique<VarDeclStmt>(var_name, std::move(init_expr));
-    }
 
     // 解析return语句
     if (curr_tok.type == TokenType::Return) {
+        DEBUG_OUTPUT("parsing return");
         skip_token("return");
         // return后可跟表达式（也可无，视为返回nil）
         std::unique_ptr<Expression> return_expr = parse_expression();
@@ -201,58 +173,71 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
 
     // 解析break语句
     if (curr_tok.type == TokenType::Break) {
+        DEBUG_OUTPUT("parsing break");
         skip_token("break");
         skip_end_of_ln();
         return std::make_unique<BreakStmt>();
     }
 
     // 解析continue语句
-    if (curr_tok.type == TokenType::Continue) {
-        skip_token("continue");
+    if (curr_tok.type == TokenType::Next) {
+        DEBUG_OUTPUT("parsing next");
+        skip_token("next");
         skip_end_of_ln();
-        return std::make_unique<ContinueStmt>();
+        return std::make_unique<NextStmt>();
     }
 
     // 解析import语句
     if (curr_tok.type == TokenType::Import) {
+        DEBUG_OUTPUT("parsing import");
         skip_token("import");
-        // 读取模块路径（假设为字符串字面量，此处简化为标识符）
-        const Token path_tok = skip_token();
-        if (path_tok.type != TokenType::String && path_tok.type != TokenType::Identifier) {
-            std::cerr << Color::RED
-                      << "[Syntax Error] Import path must be a string or identifier, got '"
-                      << path_tok.text << "' (Line: " << path_tok.lineno << ")"
-                      << Color::RESET << std::endl;
-            assert(false && "Invalid import path");
-        }
-        const std::string import_path = path_tok.text;
+        // 读取模块路径
+        const std::string import_path = skip_token().text;
 
         skip_end_of_ln();
         return std::make_unique<ImportStmt>(import_path);
     }
-
-    // 解析赋值语句（x = expr;）
-    if (curr_tok.type == TokenType::Identifier && curr_tok_idx_ + 1 < tokens_.size()) {
-        const Token next_tok = tokens_.at(curr_tok_idx_ + 1);
-        if (next_tok.type == TokenType::Assign) {
-            const std::string var_name = skip_token().text;  // 读取赋值目标变量名
-            skip_token("=");                                 // 跳过赋值符号
-            auto assign_expr = parse_expression();           // 解析赋值表达式
-            if (!assign_expr) {
-                std::cerr << Color::RED
-                          << "[Syntax Error] Assignment missing right-hand side expression"
-                          << Color::RESET << std::endl;
-                assert(false && "Invalid assignment expression");
-            }
-            skip_end_of_ln();
-            return std::make_unique<AssignStmt>(var_name, std::move(assign_expr));
-        }
+    // 解析nonlocal语句
+    if (curr_tok.type == TokenType::Nonlocal) {
+        DEBUG_OUTPUT("parsing nonlocal");
+        skip_token("nonlocal");
+        const std::string name = skip_token().text;
+        skip_token("=");
+        std::unique_ptr<Expression> expr = parse_expression();
+        skip_end_of_ln();
+        return std::make_unique<NonlocalAssignStmt>(name, std::move(expr));
     }
 
-    // 解析表达式语句（如函数调用、变量引用等）
+    // 解析global语句
+    if (curr_tok.type == TokenType::Global) {
+        DEBUG_OUTPUT("parsing global");
+        skip_token("global");
+        const std::string name = skip_token().text;
+        skip_token("=");
+        std::unique_ptr<Expression> expr = parse_expression();
+        skip_end_of_ln();
+        return std::make_unique<GlobalAssignStmt>(name, std::move(expr));
+    }
+
+    // 解析赋值语句（x = expr;）
+    if (curr_tok.type == TokenType::Identifier
+        and curr_tok_idx_ + 1 < tokens_.size()
+        and tokens_[curr_tok_idx_ + 1].type == TokenType::Assign
+    ) {
+        DEBUG_OUTPUT("parsing assign");
+        const auto name = skip_token().text;
+        skip_token("=");
+        auto expr = parse_expression();
+        skip_end_of_ln();
+        return std::make_unique<AssignStmt>(name, std::move(expr));
+    }
+
+
+    // 解析表达式语句
     auto expr = parse_expression();
     if (expr != nullptr and curr_token().text == "=") {
         if (dynamic_cast<GetMemberExpr*>(expr.get())) {
+            DEBUG_OUTPUT("parsing get member");
             skip_token("=");
             auto value = parse_expression();
             skip_end_of_ln();
