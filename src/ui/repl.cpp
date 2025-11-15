@@ -13,12 +13,13 @@
 #include "ir_gen.hpp"
 #include "parser.hpp"
 #include "project_debugger.hpp"
+#include "ui/color.hpp"
 
 namespace ui {
 
 std::string Repl::read(const std::string& prompt) {
     std::string result;
-    std::cout << prompt;
+    std::cout << Color::BRIGHT_MAGENTA << prompt << Color::RESET;
     std::cout.flush();
     std::getline(std::cin, result);
     return trim(result);

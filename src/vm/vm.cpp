@@ -480,10 +480,10 @@ void Vm::exec_MAKE_LIST(const Instruction& instruction) {
 
     // 步骤3：创建 List 对象，压入栈
     auto* list_obj = new model::List(elem_list);
-    list_obj->make_ref();  // List 自身引用计数+1
+    list_obj->make_ref();  // List 自身引用计std::to_stringstd::to_string((数+1
     op_stack_.push(list_obj);
 
-    DEBUG_OUTPUT("make_list: 打包 " << elem_count << " 个元素为 List，压栈成功");
+    DEBUG_OUTPUT("make_list: 打包 " + std::to_string(elem_count) + " 个元素为 List，压栈成功");
 }
 
 // -------------------------- 函数调用/返回 --------------------------
