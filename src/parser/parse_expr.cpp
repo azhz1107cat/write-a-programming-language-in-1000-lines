@@ -4,14 +4,18 @@
 #include <memory>
 #include <vector>
 
+#include "project_debugger.hpp"
+
 
 namespace kiz {
 std::unique_ptr<Expression> Parser::parse_expression() {
+    DEBUG_OUTPUT("parse the expression...");
     return parse_logical_or();
 }
 
 // 处理 or
 std::unique_ptr<Expression> Parser::parse_logical_or() {
+    DEBUG_OUTPUT("parsing logical_or...");
     auto node = parse_logical_and(); // 先解析 and
     while (curr_token().type == TokenType::Or) {
         auto op_token = skip_token("or");
@@ -27,6 +31,7 @@ std::unique_ptr<Expression> Parser::parse_logical_or() {
 
 // 处理 and
 std::unique_ptr<Expression> Parser::parse_logical_and() {
+    DEBUG_OUTPUT("parsing logical_and...");
     auto node = parse_comparison();
     while (curr_token().type == TokenType::And) {
         auto op_token = skip_token("and");
@@ -41,6 +46,7 @@ std::unique_ptr<Expression> Parser::parse_logical_and() {
 }
 
 std::unique_ptr<Expression> Parser::parse_comparison() {
+    DEBUG_OUTPUT("parsing comparison...");
     auto node = parse_add_sub();
     while (true) {
         const auto curr_type = curr_token().type;
@@ -84,6 +90,7 @@ std::unique_ptr<Expression> Parser::parse_comparison() {
 }
 
 std::unique_ptr<Expression> Parser::parse_add_sub() {
+    DEBUG_OUTPUT("parsing add/sub...");
     auto node = parse_mul_div_mod();
     while (
         curr_token().type == TokenType::Plus
@@ -98,6 +105,7 @@ std::unique_ptr<Expression> Parser::parse_add_sub() {
 }
 
 std::unique_ptr<Expression> Parser::parse_mul_div_mod() {
+    DEBUG_OUTPUT("parsing mul/div/mod...");
     auto node = parse_power();
     while (
         curr_token().type == TokenType::Star
@@ -113,6 +121,7 @@ std::unique_ptr<Expression> Parser::parse_mul_div_mod() {
 }
 
 std::unique_ptr<Expression> Parser::parse_power() {
+    DEBUG_OUTPUT("parsing power...");
     auto node = parse_unary();
     if (curr_token().type == TokenType::Caret) {
         auto tok = curr_token();
@@ -124,6 +133,7 @@ std::unique_ptr<Expression> Parser::parse_power() {
 }
 
 std::unique_ptr<Expression> Parser::parse_unary() {
+    DEBUG_OUTPUT("parsing unary...");
     if (curr_token().type == TokenType::Not) {
         auto op_token = skip_token(); // 跳过 not
         auto operand = parse_unary(); // 右结合
@@ -141,6 +151,7 @@ std::unique_ptr<Expression> Parser::parse_unary() {
 }
 
 std::unique_ptr<Expression> Parser::parse_factor() {
+    DEBUG_OUTPUT("parsing factor...");
     auto node = parse_primary();
 
     while (true) {
@@ -168,6 +179,7 @@ std::unique_ptr<Expression> Parser::parse_factor() {
 }
 
 std::unique_ptr<Expression> Parser::parse_primary() {
+    DEBUG_OUTPUT("parsing primary...");
     const auto tok = skip_token();
     if (tok.type == TokenType::Number) {
         return std::make_unique<NumberExpr>(tok.text);

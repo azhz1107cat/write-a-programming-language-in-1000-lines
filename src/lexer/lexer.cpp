@@ -21,7 +21,6 @@ static bool keywords_registered = false;
 
 void register_keywords() {
     if (keywords_registered) return;
-    keywords["var"] = TokenType::Var;
     keywords["fn"] = TokenType::Func;
     keywords["if"] = TokenType::If;
     keywords["else"] = TokenType::Else;
@@ -39,7 +38,7 @@ void register_keywords() {
     keywords_registered = true;
 }
 
-std::vector<Token> Lexer::tokenize(const std::string& file_path, const std::string& src) {
+std::vector<Token> Lexer::tokenize(const std::string& src) {
     std::vector<Token> tokens;
     size_t i = 0;
     int line = 1, col = 1;

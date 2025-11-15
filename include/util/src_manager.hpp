@@ -27,6 +27,6 @@ std::string get_slice(const std::string& src_path, const int& src_line_start, co
 std::string get_file_by_path(const std::string& path);
 
 // 打开kiz文件并将其添加到opened_files, 返回文件内容
-std::string open_new_kiz_file(const std::string& path);
+std::string open_new_file(const std::string& path);
 
 } // namespace util

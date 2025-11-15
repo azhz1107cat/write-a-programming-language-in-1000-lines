@@ -16,7 +16,7 @@
 
 namespace kiz {
 
-VmState Vm::load(model::Module* src_module) {
+VmState Vm::load(const model::Module* src_module) {
     // 合法性校验：防止空指针访问
     assert(src_module != nullptr && "Vm::load: 传入的src_module不能为nullptr");
     assert(src_module->code != nullptr && "Vm::load: 模块的CodeObject未初始化（code为nullptr）");
@@ -44,13 +44,13 @@ VmState Vm::load(model::Module* src_module) {
     module_call_frame->names = src_module->code->names; // 复制变量名列表（指令操作数索引对应此列表）
 
     // 将调用帧压入VM的调用栈
-    this->call_stack_.push(std::move(module_call_frame));
+    this->call_stack_.emplace_back(std::move(module_call_frame));
 
     // 初始化VM执行状态：标记为"就绪"
     this->pc_ = 0;         // 全局PC同步为调用帧初始PC
     this->running_ = true; // 标记VM为运行状态（等待exec触发执行）
     assert(!this->call_stack_.empty() && "Vm::load: 调用栈为空，无法执行指令");
-    auto& curr_frame = *this->call_stack_.top(); // 获取当前模块的调用帧（栈顶）
+    auto& curr_frame = *this->call_stack_.back(); // 获取当前模块的调用帧（栈顶）
     assert(curr_frame.code_object != nullptr && "Vm::load: 当前调用帧无关联CodeObject");
 
     // 循环执行当前调用帧下的所有指令（依赖已实现的exec单条指令逻辑）
@@ -72,13 +72,13 @@ VmState Vm::load(model::Module* src_module) {
     // 栈顶：操作数栈非空则为栈顶元素，否则为nullptr
     state.stack_top = op_stack_.empty() ? nullptr : op_stack_.top();
     // 局部变量：当前调用帧的locals，无调用帧则为空
-    state.locals = call_stack_.empty() 
-        ? deps::HashMap<model::Object*>() 
-        : call_stack_.top()->locals;
+    state.locals = call_stack_.empty()
+        ? deps::HashMap<model::Object*>()
+        : call_stack_.back()->locals;
     return state;
 }
 
-void Vm::exec(Instruction instruction) { 
+void Vm::exec(Instruction instruction) {
     switch (instruction.opc) {
         case Opcode::OP_ADD: {
             // 二元运算：至少需要2个操作数
@@ -92,14 +92,14 @@ void Vm::exec(Instruction instruction) {
             op_stack_.pop();
 
             // 仅支持Int类型（可扩展Rational），通过dynamic_cast校验类型
-            model::Int* a_int = dynamic_cast<model::Int*>(a);
-            model::Int* b_int = dynamic_cast<model::Int*>(b);
+            auto* a_int = static_cast<model::Int*>(a);
+            auto* b_int = static_cast<model::Int*>(b);
             if (!a_int || !b_int) {
                 assert(false && "OP_ADD: 仅支持Int类型运算");
             }
 
             // 计算并压入结果（注意引用计数管理）
-            model::Int* result = new model::Int();
+            auto* result = new model::Int();
             result->val = a_int->val + b_int->val;  // BigInt支持+运算符
             result->make_ref();  // 增加引用计数，避免内存泄漏
             op_stack_.push(result);
@@ -115,13 +115,13 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Int* a_int = dynamic_cast<model::Int*>(a);
-            model::Int* b_int = dynamic_cast<model::Int*>(b);
+            auto* a_int = static_cast<model::Int*>(a);
+            auto* b_int = static_cast<model::Int*>(b);
             if (!a_int || !b_int) {
                 assert(false && "OP_SUB: 仅支持Int类型运算");
             }
 
-            model::Int* result = new model::Int();
+            auto* result = new model::Int();
             result->val = a_int->val - b_int->val;
             result->make_ref();
             op_stack_.push(result);
@@ -137,13 +137,13 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Int* a_int = dynamic_cast<model::Int*>(a);
-            model::Int* b_int = dynamic_cast<model::Int*>(b);
+            auto* a_int = static_cast<model::Int*>(a);
+            auto* b_int = static_cast<model::Int*>(b);
             if (!a_int || !b_int) {
                 assert(false && "OP_MUL: 仅支持Int类型运算");
             }
 
-            model::Int* result = new model::Int();
+            auto* result = new model::Int();
             result->val = a_int->val * b_int->val;
             result->make_ref();
             op_stack_.push(result);
@@ -159,16 +159,18 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Int* a_int = dynamic_cast<model::Int*>(a);
-            model::Int* b_int = dynamic_cast<model::Int*>(b);
+            auto* a_int = static_cast<model::Int*>(a);
+            auto* b_int = static_cast<model::Int*>(b);
             if (!a_int || !b_int) {
                 assert(false && "OP_DIV: 仅支持Int类型运算");
 
-            model::Int* result = new model::Int();
-            result->val = a_int->val / b_int->val;  // 整数除法（可扩展为Rational浮点）
-            result->make_ref();
-            op_stack_.push(result);
-            break;
+                auto result = new model::Rational(
+                    static_cast<deps::Rational>(a_int->val.operator/( b_int->val ))
+                );
+                result->make_ref();
+                op_stack_.push(result);
+                break;
+            }
         }
 
         case Opcode::OP_MOD: {
@@ -180,8 +182,8 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Int* a_int = dynamic_cast<model::Int*>(a);
-            model::Int* b_int = dynamic_cast<model::Int*>(b);
+            auto* a_int = static_cast<model::Int*>(a);
+            auto* b_int = static_cast<model::Int*>(b);
             if (!a_int || !b_int) {
                 assert(false && "OP_MOD: 仅支持Int类型运算");
             }
@@ -189,7 +191,7 @@ void Vm::exec(Instruction instruction) {
                 assert(false && "OP_MOD: 除数不能为0");
             }
 
-            model::Int* result = new model::Int();
+            auto* result = new model::Int();
             result->val = a_int->val % b_int->val;
             result->make_ref();
             op_stack_.push(result);
@@ -205,14 +207,14 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();  // 底数
             op_stack_.pop();
 
-            model::Int* a_int = dynamic_cast<model::Int*>(a);
-            model::Int* b_int = dynamic_cast<model::Int*>(b);
+            auto* a_int = static_cast<model::Int*>(a);
+            auto* b_int = static_cast<model::Int*>(b);
             if (!a_int || !b_int) {
                 assert(false && "OP_POW: 仅支持Int类型运算");
             }
 
-            model::Int* result = new model::Int();
-            result->val = a_int->val.pow(b_int->val.to_uint64());  // 假设BigInt有pow方法
+            auto* result = new model::Int();
+            result->val = a_int->val.pow(b_int->val);
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -226,13 +228,13 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Int* a_int = dynamic_cast<model::Int*>(a);
+            auto* a_int = static_cast<model::Int*>(a);
             if (!a_int) {
                 assert(false && "OP_NEG: 仅支持Int类型运算");
             }
 
-            model::Int* result = new model::Int();
-            result->val = -a_int->val;  // 取负
+            auto* result = new model::Int();
+            result->val = a_int->val * deps::BigInt(-1);  // 取负
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -249,18 +251,18 @@ void Vm::exec(Instruction instruction) {
 
             bool is_equal = false;
             // 处理Int类型比较
-            if (model::Int* a_int = dynamic_cast<model::Int*>(a); a_int) {
-                if (model::Int* b_int = dynamic_cast<model::Int*>(b); b_int) {
+            if (auto* a_int = static_cast<model::Int*>(a); a_int) {
+                if (auto* b_int = static_cast<model::Int*>(b); b_int) {
                     is_equal = (a_int->val == b_int->val);
                 }
             }
             // 处理Nil类型（Nil == Nil 为true）
-            else if (dynamic_cast<model::Nil*>(a) && dynamic_cast<model::Nil*>(b)) {
+            else if (static_cast<model::Nil*>(a) && static_cast<model::Nil*>(b)) {
                 is_equal = true;
             }
             // 处理String类型（扩展）
-            else if (model::String* a_str = dynamic_cast<model::String*>(a); a_str) {
-                if (model::String* b_str = dynamic_cast<model::String*>(b); b_str) {
+            else if (model::String* a_str = static_cast<model::String*>(a); a_str) {
+                if (model::String* b_str = static_cast<model::String*>(b); b_str) {
                     is_equal = (a_str->val == b_str->val);
                 }
             }
@@ -268,9 +270,8 @@ void Vm::exec(Instruction instruction) {
                 assert(false && "OP_EQ: 不支持的类型比较");
             }
 
-            // 压入Bool结果（假设Bool有静态实例优化，此处简化为new）
-            model::Bool* result = new model::Bool();
-            result->val = is_equal;  // 假设Bool有bool类型成员val
+            // 压入Bool结果
+            auto* result = new model::Bool(is_equal);
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -286,8 +287,8 @@ void Vm::exec(Instruction instruction) {
             op_stack_.pop();
 
             bool is_gt = false;
-            if (model::Int* a_int = dynamic_cast<model::Int*>(a); a_int) {
-                if (model::Int* b_int = dynamic_cast<model::Int*>(b); b_int) {
+            if (auto* a_int = static_cast<model::Int*>(a); a_int) {
+                if (auto* b_int = static_cast<model::Int*>(b); b_int) {
                     is_gt = (a_int->val > b_int->val);
                 }
             }
@@ -295,8 +296,7 @@ void Vm::exec(Instruction instruction) {
                 assert(false && "OP_GT: 仅支持Int类型比较");
             }
 
-            model::Bool* result = new model::Bool();
-            result->val = is_gt;
+            auto* result = new model::Bool(is_gt);
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -312,8 +312,8 @@ void Vm::exec(Instruction instruction) {
             op_stack_.pop();
 
             bool is_lt = false;
-            if (model::Int* a_int = dynamic_cast<model::Int*>(a); a_int) {
-                if (model::Int* b_int = dynamic_cast<model::Int*>(b); b_int) {
+            if (auto* a_int = static_cast<model::Int*>(a); a_int) {
+                if (auto* b_int = static_cast<model::Int*>(b); b_int) {
                     is_lt = (a_int->val < b_int->val);
                 }
             }
@@ -321,8 +321,7 @@ void Vm::exec(Instruction instruction) {
                 assert(false && "OP_LT: 仅支持Int类型比较");
             }
 
-            model::Bool* result = new model::Bool();
-            result->val = is_lt;
+            auto* result = new model::Bool(is_lt);
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -337,14 +336,13 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Bool* a_bool = dynamic_cast<model::Bool*>(a);
-            model::Bool* b_bool = dynamic_cast<model::Bool*>(b);
+            auto* a_bool = static_cast<model::Bool*>(a);
+            auto* b_bool = static_cast<model::Bool*>(b);
             if (!a_bool || !b_bool) {
                 assert(false && "OP_AND: 仅支持Bool类型运算");
             }
 
-            model::Bool* result = new model::Bool();
-            result->val = (a_bool->val && b_bool->val);  // 逻辑与
+            auto* result = new model::Bool((a_bool->val && b_bool->val));
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -357,13 +355,12 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Bool* a_bool = dynamic_cast<model::Bool*>(a);
+            auto* a_bool = static_cast<model::Bool*>(a);
             if (!a_bool) {
                 assert(false && "OP_NOT: 仅支持Bool类型运算");
             }
 
-            model::Bool* result = new model::Bool();
-            result->val = !a_bool->val;  // 逻辑非
+            auto* result = new model::Bool(!a_bool->val);
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -378,14 +375,13 @@ void Vm::exec(Instruction instruction) {
             model::Object* a = op_stack_.top();
             op_stack_.pop();
 
-            model::Bool* a_bool = dynamic_cast<model::Bool*>(a);
-            model::Bool* b_bool = dynamic_cast<model::Bool*>(b);
+            auto* a_bool = static_cast<model::Bool*>(a);
+            auto* b_bool = static_cast<model::Bool*>(b);
             if (!a_bool || !b_bool) {
                 assert(false && "OP_OR: 仅支持Bool类型运算");
             }
 
-            model::Bool* result = new model::Bool();
-            result->val = (a_bool->val || b_bool->val);  // 逻辑或
+            auto* result = new model::Bool((a_bool->val || b_bool->val));
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -402,8 +398,7 @@ void Vm::exec(Instruction instruction) {
             op_stack_.pop();
 
             bool is_same = (a == b);  // 直接比较对象地址
-            model::Bool* result = new model::Bool();
-            result->val = is_same;
+            auto* result = new model::Bool(is_same);
             result->make_ref();
             op_stack_.push(result);
             break;
@@ -425,7 +420,7 @@ void Vm::exec(Instruction instruction) {
             // 栈顶：函数对象；栈顶下n个元素：函数参数（n=func->argc）
             model::Object* func_obj = op_stack_.top();
             op_stack_.pop();
-            model::Function* func = dynamic_cast<model::Function*>(func_obj);
+            model::Function* func = static_cast<model::Function*>(func_obj);
             if (!func) {
                 assert(false && "CALL: 栈顶元素非Function类型");
             }
@@ -454,11 +449,11 @@ void Vm::exec(Instruction instruction) {
                 model::Object* param_val = op_stack_.top();
                 op_stack_.pop();
                 param_val->make_ref();  // 增加引用计数
-                new_frame->locals[param_name] = param_val;
+                new_frame->locals.insert(param_name, param_val);
             }
 
             // 压入新调用帧，更新pc为函数字节码起始位置
-            call_stack_.push(std::move(new_frame));
+            call_stack_.emplace_back(std::move(new_frame));
             pc_ = 0;
             break;
         }
@@ -469,9 +464,9 @@ void Vm::exec(Instruction instruction) {
                 assert(false && "RET: 无调用者（顶层调用帧无法返回）");
             }
             // 弹出当前调用帧（ ownership转移）
-            std::unique_ptr<CallFrame> curr_frame = std::move(call_stack_.top());
-            call_stack_.pop();
-            CallFrame* caller_frame = call_stack_.top().get();  // 调用者帧
+            std::unique_ptr<CallFrame> curr_frame = std::move(call_stack_.back());
+            call_stack_.pop_back();
+            CallFrame* caller_frame = call_stack_.back().get();  // 调用者帧
 
             // 处理返回值（栈顶为返回值，无则默认Nil）
             model::Object* return_val = new model::Nil();
@@ -499,7 +494,7 @@ void Vm::exec(Instruction instruction) {
             model::Object* obj = op_stack_.top();
             op_stack_.pop();
             size_t name_idx = instruction.opn_list[0];
-            CallFrame* curr_frame = call_stack_.top().get();
+            CallFrame* curr_frame = call_stack_.back().get();
 
             // 校验属性名索引
             if (name_idx >= curr_frame->names.size()) {
@@ -509,10 +504,10 @@ void Vm::exec(Instruction instruction) {
 
             // 从对象的attrs中查找属性
             auto attr_it = obj->attrs.find(attr_name);
-            if (attr_it == obj->attrs.end()) {
+            if (attr_it == nullptr) {
                 assert(false && "GET_ATTR: 对象无此属性");
             }
-            model::Object* attr_val = attr_it->second;
+            model::Object* attr_val = attr_it->value;
             attr_val->make_ref();
             op_stack_.push(attr_val);
             break;
@@ -528,7 +523,7 @@ void Vm::exec(Instruction instruction) {
             model::Object* obj = op_stack_.top();
             op_stack_.pop();
             size_t name_idx = instruction.opn_list[0];
-            CallFrame* curr_frame = call_stack_.top().get();
+            CallFrame* curr_frame = call_stack_.back().get();
 
             if (name_idx >= curr_frame->names.size()) {
                 assert(false && "SET_ATTR: 属性名索引超出范围");
@@ -537,11 +532,11 @@ void Vm::exec(Instruction instruction) {
 
             // 更新属性（旧值减引用，新值加引用）
             auto attr_it = obj->attrs.find(attr_name);
-            if (attr_it != obj->attrs.end()) {
-                attr_it->second->del_ref();  // 释放旧值引用
+            if (attr_it != nullptr) {
+                attr_it->value->del_ref();  // 释放旧值引用
             }
             attr_val->make_ref();
-            obj->attrs[attr_name] = attr_val;
+            obj->attrs.insert(attr_name, attr_val);
             break;
         }
 
@@ -550,7 +545,7 @@ void Vm::exec(Instruction instruction) {
             if (call_stack_.empty() || instruction.opn_list.empty()) {
                 assert(false && "LOAD_VAR: 无调用帧或无变量名索引");
             }
-            CallFrame* curr_frame = call_stack_.top().get();
+            CallFrame* curr_frame = call_stack_.back().get();
             size_t name_idx = instruction.opn_list[0];
             if (name_idx >= curr_frame->names.size()) {
                 assert(false && "LOAD_VAR: 变量名索引超出范围");
@@ -559,10 +554,10 @@ void Vm::exec(Instruction instruction) {
 
             // 查找变量
             auto var_it = curr_frame->locals.find(var_name);
-            if (var_it == curr_frame->locals.end()) {
+            if (var_it == nullptr) {
                 assert(false && "LOAD_VAR: 局部变量未定义");
             }
-            model::Object* var_val = var_it->second;
+            model::Object* var_val = var_it->value;
             var_val->make_ref();
             op_stack_.push(var_val);
             break;
@@ -602,20 +597,20 @@ void Vm::exec(Instruction instruction) {
 
             // 更新全局变量（旧值减引用）
             auto var_it = global_frame->locals.find(var_name);
-            if (var_it != global_frame->locals.end()) {
-                var_it->second->del_ref();
+            if (var_it != nullptr) {
+                var_it->value->del_ref();
             }
-            global_frame->locals[var_name] = var_val;
+            global_frame->locals.insert(var_name, var_val);
             break;
         }
 
         case Opcode::SET_LOCAL: {
             // 存储局部变量（当前调用帧的locals）
-            if (call_stack_.empty() || op_stack_.empty() || introduction.opn_list.empty()) {
+            if (call_stack_.empty() || op_stack_.empty() || instruction.opn_list.empty()) {
                 assert(false && "SET_LOCAL: 无调用帧/栈空/无变量名索引");
             }
-            CallFrame* curr_frame = call_stack_.top().get();
-            size_t name_idx = introduction.opn_list[0];
+            CallFrame* curr_frame = call_stack_.back().get();
+            size_t name_idx = instruction.opn_list[0];
             if (name_idx >= curr_frame->names.size()) {
                 assert(false && "SET_LOCAL: 变量名索引超出范围");
             }
@@ -627,19 +622,19 @@ void Vm::exec(Instruction instruction) {
 
             // 更新局部变量
             auto var_it = curr_frame->locals.find(var_name);
-            if (var_it != curr_frame->locals.end()) {
-                var_it->second->del_ref();
+            if (var_it != nullptr) {
+                var_it->value->del_ref();
             }
-            curr_frame->locals[var_name] = var_val;
+            curr_frame->locals.insert(var_name, var_val);
             break;
         }
 
         case Opcode::SET_NONLOCAL: {
             // 存储非局部变量（向上查找非当前的局部作用域）
-            if (call_stack_.size() < 2 || op_stack_.empty() || introduction.opn_list.empty()) {
+            if (call_stack_.size() < 2 || op_stack_.empty() || instruction.opn_list.empty()) {
                 assert(false && "SET_NONLOCAL: 调用帧不足/栈空/无变量名索引");
             }
-            size_t name_idx = introduction.opn_list[0];
+            size_t name_idx = instruction.opn_list[0];
             std::string var_name;
             CallFrame* target_frame = nullptr;
 
@@ -650,7 +645,7 @@ void Vm::exec(Instruction instruction) {
                 CallFrame* frame = frame_it->get();
                 if (name_idx >= frame->names.size()) continue;
                 var_name = frame->names[name_idx];
-                if (frame->locals.count(var_name)) {
+                if (frame->locals.find(var_name)) {
                     target_frame = frame;
                     break;
                 }
@@ -666,19 +661,19 @@ void Vm::exec(Instruction instruction) {
 
             // 更新目标作用域变量
             auto var_it = target_frame->locals.find(var_name);
-            if (var_it != target_frame->locals.end()) {
-                var_it->second->del_ref();
+            if (var_it != nullptr) {
+                var_it->value->del_ref();
             }
-            target_frame->locals[var_name] = var_val;
+            target_frame->locals.insert(var_name, var_val);
             break;
         }
 
         case Opcode::JUMP: {
             // 无条件跳转到opn_list[0]指定的pc
-            if (introduction.opn_list.empty()) {
+            if (instruction.opn_list.empty()) {
                 assert(false && "JUMP: 无目标pc索引");
             }
-            size_t target_pc = introduction.opn_list[0];
+            size_t target_pc = instruction.opn_list[0];
             if (target_pc >= code_list_.size()) {
                 assert(false && "JUMP: 目标pc超出字节码范围");
             }
@@ -688,18 +683,18 @@ void Vm::exec(Instruction instruction) {
 
         case Opcode::JUMP_IF_FALSE: {
             // 栈顶为条件，为假（Nil/Bool(false)）则跳转
-            if (op_stack_.empty() || introduction.opn_list.empty()) {
+            if (op_stack_.empty() || instruction.opn_list.empty()) {
                 assert(false && "JUMP_IF_FALSE: 栈空/无目标pc");
             }
             model::Object* cond = op_stack_.top();
             op_stack_.pop();
-            size_t target_pc = introduction.opn_list[0];
+            size_t target_pc = instruction.opn_list[0];
 
             bool need_jump = false;
-            if (dynamic_cast<model::Nil*>(cond)) {
+            if (static_cast<model::Nil*>(cond)) {
                 need_jump = true;
             }
-            else if (model::Bool* cond_bool = dynamic_cast<model::Bool*>(cond); cond_bool) {
+            else if (auto* cond_bool = static_cast<model::Bool*>(cond); cond_bool) {
                 need_jump = !cond_bool->val;
             }
             else {

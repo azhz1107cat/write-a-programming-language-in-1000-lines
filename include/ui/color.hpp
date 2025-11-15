@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace ConClr {
+namespace Color {
     // 基础控制码：重置所有属性
     inline std::string RESET = "\033[0m";
 

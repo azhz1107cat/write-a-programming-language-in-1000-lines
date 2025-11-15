@@ -92,7 +92,7 @@ std::string get_file_by_path(const std::string& path) {
     }
 
     // 缓存未命中，新打开文件并加入缓存
-    std::string file_content = open_new_kiz_file(path);
+    std::string file_content = open_new_file(path);
     opened_files.emplace(path, file_content);
 
     return file_content;

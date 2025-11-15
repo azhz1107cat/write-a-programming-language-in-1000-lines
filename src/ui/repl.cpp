@@ -15,35 +15,34 @@
 
 namespace ui {
 
-Repl::Repl() {
-    // ToDo: ...
-}
-
-std::string Repl::read(const std::string& prompt) const {
+std::string Repl::read(const std::string& prompt) {
     std::string result;
     std::cout << prompt;
+    std::cout.flush();
     std::getline(std::cin, result);
     return trim(result);
 }
 
 void Repl::loop() {
-    while (true) {
+    while (is_running_) {
         auto code = read(">>>");
+        add_to_history(code);
         eval_and_print(code);
     }
 }
 
-void Repl::eval_and_print(const std::string& code) {
-    // kiz::Lexer lexer;
-    // kiz::Parser parser;
-    // kiz::IRGenerator ir_gen;
-    // kiz::Vm vm;
-    //
-    // auto tokens = lexer.tokenize(code);
-    // auto ast = parser.parse(tokens);
-    // auto ir = ir_gen.gen(std::move(ast));
-    // auto result = vm.load(ir);
-    // std::cout << model::to_string(result.stack_top) << std::endl;
+void Repl::eval_and_print(const std::string& cmd) {
+    std::string file_path = "<shell#>";
+    kiz::Lexer lexer(file_path);
+    kiz::Parser parser(file_path);
+    kiz::IRGenerator ir_gen(file_path);
+    kiz::Vm vm(file_path);
+
+    auto tokens = lexer.tokenize(cmd);
+    auto ast = parser.parse(tokens);
+    auto ir = ir_gen.gen();
+    auto [stack_top, locals] = vm.load(ir);
+    std::cout << stack_top->to_string() << std::endl;
 }
 
 } // namespace ui

@@ -13,7 +13,6 @@
 #include <memory>
 #include <sstream>
 #include <utility>
-#include <variant>
 
 namespace deps {
 
@@ -32,7 +31,6 @@ inline size_t hash_string(const std::string& key) {
 // 模板类：键为std::string，值为任意类型T的HashMap
 template <typename VT>
 class HashMap {
-private:
     // 嵌套桶节点结构体（存储键值对、哈希值、链表指针）
     struct StringBucket {
         std::string key;
@@ -141,32 +139,9 @@ public:
         return VT();  // 返回默认构造的T
     }
 
-    // 递归查找键（支持查找父结构体__parent__）
+    // 递归查找键
     [[nodiscard]] std::shared_ptr<Node> find(const std::string& key) const {
-        // 先在当前HashMap查找
-        std::shared_ptr<Node> target_node = find_in_current(key);
-        if (target_node != nullptr) {
-            return target_node;
-        }
-
-        // 未找到，查找__parent__节点（原代码逻辑保留）
-        const std::shared_ptr<Node> parent_node = find_in_current("__parent__");
-        if (parent_node == nullptr) {
-            return nullptr;
-        }
-
-        // 检查__parent__的值是否为HashMap指针（需T支持is_lstruct()和data成员）
-        if (!parent_node->value.is_lstruct()) {
-            return nullptr;
-        }
-        // 从T的data中提取HashMap指针（原代码依赖std::variant，需T的data为variant类型）
-        const auto parent_map_ptr = std::get_if<std::shared_ptr<HashMap<VT>>>(&parent_node->value.data);
-        if (parent_map_ptr == nullptr || *parent_map_ptr == nullptr) {
-            return nullptr;
-        }
-
-        // 递归查找父HashMap
-        return (*parent_map_ptr)->find(key);
+        return find_in_current(key);
     }
 
     // 仅在当前HashMap查找键（不递归父结构体）
@@ -198,7 +173,6 @@ public:
         std::stringstream ss;
         ss << "{ ";
 
-        // 统计总元素数（用于处理逗号）
         size_t total_count = 0;
         for (const auto& bucket_head : buckets_) {
             auto current = bucket_head;
@@ -208,13 +182,17 @@ public:
             }
         }
 
-        // 拼接所有键值对
         size_t current_idx = 0;
         for (const auto& bucket_head : buckets_) {
             auto current = bucket_head;
             while (current != nullptr) {
-                ss << current->key << ": " << current->value.to_string();
-                // 非最后一个元素加逗号
+                ss << current->key << ": ";
+                // 兼容指针类型：指针输出地址，非指针调用to_string()
+                if constexpr (std::is_pointer_v<VT>) {
+                    ss << static_cast<void*>(current->value);
+                } else {
+                    ss << current->value.to_string();
+                }
                 if (current_idx < total_count - 1) {
                     ss << ", ";
                 }
@@ -257,6 +235,55 @@ public:
             this->insert(key, val);
         }
         this->elem_count_ = other.elem_count_;
+    }
+
+    HashMap(HashMap&& other) noexcept
+    : buckets_(std::move(other.buckets_)),
+      elem_count_(other.elem_count_),
+      load_factor_(other.load_factor_) {
+        other.elem_count_ = 0; // 置空原对象计数
+        other.buckets_.clear(); // 置空原对象桶数组
+    }
+
+    HashMap& operator=(const HashMap& other) {
+        if (this == &other) return *this; // 自赋值检查
+
+        // 释放当前资源
+        buckets_.clear();
+        elem_count_ = 0;
+
+        // 深拷贝其他成员（删除 load_factor_ = other.load_factor_）
+        auto all_kv = other.to_vector();
+        size_t init_size = 16;
+        while (init_size < (all_kv.size() / load_factor_)) { // 直接用当前对象的 load_factor_（常量，和 other 一致）
+            init_size *= 2;
+        }
+        buckets_.resize(init_size, nullptr);
+        for (auto& [key, val] : all_kv) {
+            insert(key, std::move(val));
+        }
+        elem_count_ = other.elem_count_;
+
+        return *this;
+    }
+
+    // 2. 修复移动赋值运算符
+    HashMap& operator=(HashMap&& other) noexcept {
+        if (this == &other) return *this; // 自赋值检查
+
+        // 释放当前资源
+        buckets_.clear();
+        elem_count_ = 0;
+
+        // 转移其他对象的资源（删除 load_factor_ = other.load_factor_）
+        buckets_ = std::move(other.buckets_);
+        elem_count_ = other.elem_count_;
+
+        // 置空原对象
+        other.elem_count_ = 0;
+        other.buckets_.clear();
+
+        return *this;
     }
 };
 

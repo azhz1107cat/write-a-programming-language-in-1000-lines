@@ -49,13 +49,13 @@ void args_parser(const int argc, char* argv[]) {
 
     // 无参数：默认启动REPL
     if (argc == 1) {
-      ui::Repl repl;
+        ui::Repl repl;
         return;
     }
 
     // 1个参数 : 处理 version/repl/help/路径
     if (argc == 2) {
-        std::string cmd = argv[1];
+        const std::string cmd = argv[1];
         if (cmd == "version") {
             // 显示版本
             printf("kiz version %s\n", "KIZ_VERSION");
@@ -73,7 +73,7 @@ void args_parser(const int argc, char* argv[]) {
 
     // 2个参数 : 仅处理 run <path>
     if (argc == 3) {
-        std::string cmd = argv[1];
+        const std::string cmd = argv[1];
         if (cmd == "run") {
             std::string path = argv[2];
             // ToDo: ...

@@ -30,10 +30,10 @@ std::unique_ptr<BlockStmt> Parser::parse_block() {
     // 校验块结束符是否为end（防止提前EOF）
     const Token& end_tok = curr_token();
     if (end_tok.type != TokenType::EndOfFile) {
-        // std::cerr << ConClr::RED
+        // std::cerr << Color::RED
         //           << "[Syntax Error] Block must end with 'end', got '"
         //           << end_tok.text << "' (Line: " << end_tok.line << ", Col: " << end_tok.col << ")"
-        //           << ConClr::RESET << std::endl;
+        //           << Color::RESET << std::endl;
         // assert(false && "Block missing 'end' terminator");
     }
     // 跳过end关键字，完成块解析
@@ -46,9 +46,9 @@ std::unique_ptr<IfStmt> Parser::parse_if() {
     // 解析if条件表达式
     auto cond_expr = parse_expression();
     if (!cond_expr) {
-        std::cerr << ConClr::RED
+        std::cerr << Color::RED
                   << "[Syntax Error] If statement missing condition expression"
-                  << ConClr::RESET << std::endl;
+                  << Color::RESET << std::endl;
         assert(false && "Invalid if condition");
     }
     // 解析if体（无大括号，直接调用parse_block）
@@ -88,9 +88,9 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         // 解析循环条件表达式
         auto cond_expr = parse_expression();
         if (!cond_expr) {
-            // std::cerr << ConClr::RED
+            // std::cerr << Color::RED
             //           << "[Syntax Error] While statement missing condition expression"
-            //           << ConClr::RESET << std::endl;
+            //           << Color::RESET << std::endl;
             // assert(false && "Invalid while condition");
         }
         // 解析循环体（无大括号，用end结尾）
@@ -105,10 +105,10 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         // 读取函数名（必须是标识符）
         const Token func_name_tok = skip_token();
         if (func_name_tok.type != TokenType::Identifier) {
-            // std::cerr << ConClr::RED
+            // std::cerr << Color::RED
             //           << "[Syntax Error] Function name must be an identifier, got '"
             //           << func_name_tok.text << "' (Line: " << func_name_tok.line << ")"
-            //           << ConClr::RESET << std::endl;
+            //           << Color::RESET << std::endl;
             // assert(false && "Invalid function name");
         }
         const std::string func_name = func_name_tok.text;
@@ -120,10 +120,10 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
             while (curr_token().type != TokenType::RParen) {
                 const Token param_tok = skip_token();
                 if (param_tok.type != TokenType::Identifier) {
-                    std::cerr << ConClr::RED
+                    std::cerr << Color::RED
                               << "[Syntax Error] Function parameter must be an identifier, got '"
                               << param_tok.text << "' (Line: " << param_tok.lineno << ")"
-                              << ConClr::RESET << std::endl;
+                              << Color::RESET << std::endl;
                     assert(false && "Invalid function parameter");
                 }
                 func_params.push_back(param_tok.text);
@@ -131,10 +131,10 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
                 if (curr_token().type == TokenType::Comma) {
                     skip_token(",");
                 } else if (curr_token().type != TokenType::RParen) {
-                    std::cerr << ConClr::RED
+                    std::cerr << Color::RED
                               << "[Syntax Error] Expected ',' or ')' in function parameters, got '"
                               << curr_token().text << "'"
-                              << ConClr::RESET << std::endl;
+                              << Color::RESET << std::endl;
                     assert(false && "Mismatched function parameters");
                 }
             }
@@ -159,20 +159,20 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         // 读取变量名（必须是标识符）
         const Token var_name_tok = skip_token();
         if (var_name_tok.type != TokenType::Identifier) {
-            std::cerr << ConClr::RED
+            std::cerr << Color::RED
                       << "[Syntax Error] Variable name must be an identifier, got '"
                       << var_name_tok.text << "' (Line: " << var_name_tok.lineno << ")"
-                      << ConClr::RESET << std::endl;
+                      << Color::RESET << std::endl;
             assert(false && "Invalid variable name");
         }
         const std::string var_name = var_name_tok.text;
 
         // 解析赋值符号
         if (curr_token().type != TokenType::Assign) {
-            std::cerr << ConClr::RED
+            std::cerr << Color::RED
                       << "[Syntax Error] Expected '=' in variable declaration, got '"
                       << curr_token().text << "'"
-                      << ConClr::RESET << std::endl;
+                      << Color::RESET << std::endl;
             assert(false && "Missing '=' in var declaration");
         }
         skip_token("=");
@@ -180,9 +180,9 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         // 解析赋值表达式
         auto init_expr = parse_expression();
         if (!init_expr) {
-            std::cerr << ConClr::RED
+            std::cerr << Color::RED
                       << "[Syntax Error] Variable declaration missing initial value"
-                      << ConClr::RESET << std::endl;
+                      << Color::RESET << std::endl;
             assert(false && "Invalid var initial expression");
         }
 
@@ -219,10 +219,10 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         // 读取模块路径（假设为字符串字面量，此处简化为标识符）
         const Token path_tok = skip_token();
         if (path_tok.type != TokenType::String && path_tok.type != TokenType::Identifier) {
-            std::cerr << ConClr::RED
+            std::cerr << Color::RED
                       << "[Syntax Error] Import path must be a string or identifier, got '"
                       << path_tok.text << "' (Line: " << path_tok.lineno << ")"
-                      << ConClr::RESET << std::endl;
+                      << Color::RESET << std::endl;
             assert(false && "Invalid import path");
         }
         const std::string import_path = path_tok.text;
@@ -239,9 +239,9 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
             skip_token("=");                                 // 跳过赋值符号
             auto assign_expr = parse_expression();           // 解析赋值表达式
             if (!assign_expr) {
-                std::cerr << ConClr::RED
+                std::cerr << Color::RED
                           << "[Syntax Error] Assignment missing right-hand side expression"
-                          << ConClr::RESET << std::endl;
+                          << Color::RESET << std::endl;
                 assert(false && "Invalid assignment expression");
             }
             skip_end_of_ln();
@@ -250,41 +250,22 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
     }
 
     // 解析表达式语句（如函数调用、变量引用等）
-    auto expr_stmt = parse_expression();
-    if (expr_stmt != nullptr) {
-        // 处理成员赋值（如 obj.prop = val;）
-        if (curr_token().type == TokenType::Assign) {
-            if (auto get_mem_expr = dynamic_cast<GetMemberExpr*>(expr_stmt.get())) {
-                // 拷贝成员访问表达式（避免unique_ptr所有权问题）
-                auto cloned_get_mem = std::make_unique<GetMemberExpr>(
-                    std::move(get_mem_expr->father),
-                    get_mem_expr->child
-                );
-                skip_token("=");
-                auto val_expr = parse_expression();
-                if (!val_expr) {
-                    std::cerr << ConClr::RED
-                              << "[Syntax Error] Member assignment missing value expression"
-                              << ConClr::RESET << std::endl;
-                    assert(false && "Invalid member assignment");
-                }
-                skip_end_of_ln();
-                auto set_mem_expr = std::make_unique<SetMemberExpr>(
-                    std::move(cloned_get_mem),
-                    std::move(val_expr)
-                );
-                return std::make_unique<ExprStmt>(std::move(set_mem_expr));
-            } else {
-                // 非成员访问表达式不允许赋值（如 123 = 456;）
-                std::cerr << ConClr::RED
-                          << "[Syntax Error] Invalid assignment target: not a member access or variable"
-                          << ConClr::RESET << std::endl;
-                assert(false && "Invalid assignment target");
-            }
+    auto expr = parse_expression();
+    if (expr != nullptr and curr_token().text == "=") {
+        if (dynamic_cast<GetMemberExpr*>(expr.get())) {
+            skip_token("=");
+            auto value = parse_expression();
+            skip_end_of_ln();
+
+            auto set_mem = std::make_unique<SetMemberExpr>(std::move(expr), std::move(value));
+            return std::make_unique<ExprStmt>(std::move(set_mem));
         }
-        // 普通表达式语句（如 add(1,2);）
+        //非成员访问表达式后不能跟 =
+        assert("invalid assignment target: expected member access");
+    }
+    if (expr != nullptr) {
         skip_end_of_ln();
-        return std::make_unique<ExprStmt>(std::move(expr_stmt));
+        return std::make_unique<ExprStmt>(std::move(expr));
     }
 
     // 跳过无效Token（容错处理）

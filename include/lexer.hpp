@@ -33,7 +33,8 @@ enum class TokenType {
     ExclamationMark, Plus, Minus, Star, Slash, Backslash,
     Percent, Caret, Bang, Equal, NotEqual,
     Less, LessEqual, Greater, GreaterEqual, Pipe,
-    FatArrow, ThinArrow, DoubleColon, Not, And, Or, Is, In,
+    FatArrow, ThinArrow, DoubleColon,
+    Not, And, Or, Is, In,
     // 特殊标记
     EndOfFile, EndOfLine, Unknown
 };
@@ -49,8 +50,10 @@ struct Token {
 // 词法分析器类
 class Lexer {
     std::vector<Token> tokens;
+    const std::string& file_path;
 public:
-    std::vector<Token> tokenize(const std::string& file_path, const std::string& src);
+    explicit Lexer(const std::string& file_path) : file_path(file_path) {}
+    std::vector<Token> tokenize(const std::string& src);
 };
 
 }  // namespace kiz

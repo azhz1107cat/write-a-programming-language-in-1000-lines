@@ -17,8 +17,9 @@ namespace kiz {
 class Parser {
     std::vector<Token> tokens_;
     long long unsigned int curr_tok_idx_ = 0;
+    const std::string& file_path;
 public:
-    explicit Parser(const std::vector<Token>& tokens);
+    explicit Parser(const std::string& file_path) : file_path(file_path) {}
     ~Parser() = default;
 
     Token skip_token(const std::string& want_skip = "");
@@ -26,7 +27,7 @@ public:
     void skip_start_of_block();
     [[nodiscard]] Token curr_token() const;
 
-    std::vector<std::unique_ptr<Statement>> parse();
+    std::vector<std::unique_ptr<Statement>> parse(const std::vector<Token>& tokens);
 
     // parse stmt
     std::unique_ptr<Statement> parse_stmt();

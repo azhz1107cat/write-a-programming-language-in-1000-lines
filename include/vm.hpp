@@ -17,7 +17,9 @@ class Module;
 class CodeObject;
 class Object;
 }
+
 namespace kiz {
+
 enum class Opcode;
 
 struct VmState{
@@ -28,6 +30,8 @@ struct VmState{
 struct Instruction {
     Opcode opc;
     std::vector<size_t> opn_list;
+    size_t start_lineno;
+    size_t end_lineno;
 };
 
 struct CallFrame {
@@ -44,13 +48,16 @@ struct CallFrame {
 class Vm {
     std::stack<model::Object *> op_stack_;
     std::vector<model::Object*> constant_pool_;
-    std::stack<std::unique_ptr<CallFrame>> call_stack_;
-    size_t pc_;
+    std::vector<std::unique_ptr<CallFrame>> call_stack_;
+    size_t pc_ = 0;
     std::vector<Instruction> code_list_;
     bool running_ = false;
 
+    const std::string& file_path;
 public:
-    VmState load(model::Module* src_module);
+    explicit Vm(const std::string& file_path) : file_path(file_path) {}
+
+    VmState load(const model::Module* src_module);
     void exec(Instruction introduction);
 };
 

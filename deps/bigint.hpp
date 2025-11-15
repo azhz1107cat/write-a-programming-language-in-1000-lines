@@ -19,7 +19,6 @@
 namespace deps {
 
 class BigInt {
-private:
     std::vector<uint8_t> digits_; // 逆序存储（低位在前），每个元素 0-9
     bool is_negative_;            // false=正，true=负；0恒为非负
 
@@ -38,7 +37,7 @@ private:
     /**
      * @brief 绝对值比较（辅助减法/乘法）：返回 *this 的绝对值是否小于 other 的绝对值
      */
-    bool abs_less(const BigInt& other) const {
+    [[nodiscard]] bool abs_less(const BigInt& other) const {
         if (digits_.size() != other.digits_.size()) {
             return digits_.size() < other.digits_.size();
         }
@@ -49,12 +48,6 @@ private:
             }
         }
         return false; // 绝对值相等
-    }
-
-    BigInt abs() const {
-        BigInt res = *this;
-        res.is_negative_ = false;
-        return res;
     }
 
     /**
@@ -168,6 +161,29 @@ private:
         return res;
     }
 
+    /**
+    * @brief 辅助函数：无符号快速幂（底数和指数均为非负整数）
+    * 二分幂核心逻辑：a^b = (a^(b/2))^2 （b为偶数） / (a^(b/2))^2 * a （b为奇数）
+    */
+    static BigInt fast_pow_unsigned(const BigInt& base, const BigInt& exp) {
+        BigInt result(1); // 初始结果为 1（乘法单位元）
+        BigInt current_base = base;
+        BigInt current_exp = exp;
+        const BigInt two(2);
+
+        while (current_exp > BigInt(0)) {
+            // 若当前指数为奇数，结果 *= 当前底数
+            if (current_exp % two == BigInt(1)) {
+                result = result * current_base; // 复用 Karatsuba 乘法，高效
+            }
+            // 底数平方，指数减半（整除）
+            current_base = current_base * current_base;
+            current_exp = current_exp / two; // 整数除法，向下取整
+        }
+
+        return result;
+    }
+
 public:
     // ========================= 构造与析构（同前，补充shift_left友元声明） =========================
     BigInt() : is_negative_(false), digits_(1, 0) {}
@@ -192,10 +208,17 @@ public:
         if (this != &other) { digits_ = std::move(other.digits_); is_negative_ = other.is_negative_; other.digits_.clear(); other.is_negative_ = false; }
         return *this;
     }
+
     BigInt(const BigInt& other) = default;
     BigInt& operator=(const BigInt& other) = default;
     ~BigInt() = default;
 
+
+    [[nodiscard]] BigInt abs() const {
+        BigInt res = *this;
+        res.is_negative_ = false;
+        return res;
+    }
 
     // ========================= 比较运算符（同前） =========================
     bool operator==(const BigInt& other) const {
@@ -373,12 +396,82 @@ public:
         return remainder;
     }
 
+
     /**
      * @brief 取模赋值运算符：a %= b → a = a mod b
      */
     BigInt& operator%=(const BigInt& other) {
         *this = *this % other;
         return *this;
+    }
+
+    /**
+     * @brief 除法运算符：返回整数商（向下取整），符号规则同乘法
+     */
+    BigInt operator/(const BigInt& other) const {
+        // 断言：除数不能为0
+        assert(!(other.digits_.size() == 1 && other.digits_[0] == 0) && "BigInt division: divisor cannot be zero");
+
+        // 特殊情况：被除数为0→结果为0
+        if (digits_.size() == 1 && digits_[0] == 0) {
+            return BigInt(0);
+        }
+
+        // 符号：同号为正，异号为负（异或运算）
+        const bool res_neg = is_negative_ ^ other.is_negative_;
+
+        // 无符号除法取商
+        BigInt quotient = div_mod_unsigned(this->abs(), other.abs()).first;
+        quotient.is_negative_ = res_neg;
+        quotient.trim_leading_zeros();
+
+        return quotient;
+    }
+
+    /**
+    * @brief 除法赋值运算符
+    */
+    BigInt& operator/=(const BigInt& other) {
+        *this = *this / other;
+        return *this;
+    }
+
+    /**
+ * @brief 幂运算：计算 base^exp（this 为底数，other 为指数）
+ * 规则：
+ * 1. 指数必须为非负整数（负指数会导致分数，BigInt 不支持，断言报错）；
+ * 2. 任何数的 0 次幂 = 1（包括 0^0，编程中默认处理为 1）；
+ * 3. 0 的正次幂 = 0；
+ * 4. 负数的偶次幂为正，奇次幂为负。
+ */
+    BigInt pow(const BigInt& other) const {
+        // 断言1：指数必须为非负整数
+        assert(!other.is_negative_ && "BigInt pow: 指数不支持负数（BigInt 仅存整数）");
+
+        const BigInt& exp = other;
+        const BigInt zero(0);
+        const BigInt one(1);
+
+        // 边界情况1：指数为 0 → 结果为 1
+        if (exp == zero) {
+            return one;
+        }
+
+        // 边界情况2：底数为 0 → 结果为 0（指数为正）
+        if (*this == zero) {
+            return zero;
+        }
+
+        // 步骤1：提取底数的绝对值（后续统一计算正数幂，最后处理符号）
+        BigInt base_abs = this->abs();
+        // 步骤2：快速幂计算（处理正整数幂）
+        BigInt result_abs = fast_pow_unsigned(base_abs, exp);
+        // 步骤3：确定结果符号（仅当底数为负且指数为奇数时，结果为负）
+        bool is_result_neg = this->is_negative_ && (exp % BigInt(2) == one);
+        result_abs.is_negative_ = is_result_neg;
+
+        result_abs.trim_leading_zeros();
+        return result_abs;
     }
 
     // ========================= 输出运算符（同前） =========================
