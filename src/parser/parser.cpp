@@ -88,7 +88,7 @@ void Parser::skip_start_of_block() {
 }
 
 // parse_program实现（解析整个程序
-std::vector<std::unique_ptr<Statement>> Parser::parse(const std::vector<Token>& tokens) {
+std::unique_ptr<BlockStmt> Parser::parse(const std::vector<Token>& tokens) {
     tokens_ = tokens;    // 绑定Token列表
     curr_tok_idx_ = 0;   // 初始化索引为0
     DEBUG_OUTPUT("parsing...");
@@ -100,7 +100,7 @@ std::vector<std::unique_ptr<Statement>> Parser::parse(const std::vector<Token>& 
         }
     }
     DEBUG_OUTPUT("end parsing");
-    return program_stmts;
+    return std::make_unique<BlockStmt>(std::move(program_stmts));
 }
 
 } // namespace kiz

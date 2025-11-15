@@ -9,6 +9,10 @@
 
 #include "bigint.hpp"
 #include "ui/repl.hpp"
+#ifdef _WIN32
+#include <windows.h>
+#include <winnls.h>
+#endif
 
 #include <cstdio>
 /* 提供命令行帮助信息函数 */
@@ -37,6 +41,41 @@ void show_help(const char* prog_name) {
     printf("  help         展示帮助\n");
 }
 
+void enable_ansi_escape() {
+#ifdef _WIN32
+    // Windows 平台的颜色支持
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE) {
+        DWORD outMode = 0;
+        if (GetConsoleMode(hOut, &outMode)) {
+            // 只有在成功获取控制台模式时才尝试设置
+            if (!SetConsoleMode(hOut, outMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+                // 设置失败只是警告，不影响程序运行
+                std::cerr << "Warning: Console does not support ANSI color (STD_OUTPUT)" << std::endl;
+            }
+        } else {
+            // 获取控制台模式失败（可能在测试环境或无控制台情况）
+            // 静默失败，不输出错误信息，以免影响测试
+        }
+    }
+
+    HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);
+    if (hErr != INVALID_HANDLE_VALUE) {
+        DWORD errMode = 0;
+        if (GetConsoleMode(hErr, &errMode)) {
+            if (!SetConsoleMode(hErr, errMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+                std::cerr << "Warning: Console does not support ANSI color (STD_ERROR)" << std::endl;
+            }
+        }
+        // 获取模式失败时静默处理
+    }
+
+    // UTF-8 编码设置
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
+}
+
 /**
  * @brief 解析命令行参数（argc/argv）
  * @param argc 命令行参数个数（来自main函数）
@@ -45,6 +84,7 @@ void show_help(const char* prog_name) {
  */
 void args_parser(const int argc, char* argv[]) {
     // 程序名称
+    enable_ansi_escape();
     const char* prog_name = argv[0];
 
     // 无参数：默认启动REPL
@@ -61,7 +101,8 @@ void args_parser(const int argc, char* argv[]) {
             printf("kiz version %s\n", "KIZ_VERSION");
         } else if (cmd == "repl") {
             // 显式启动REPL
-          ui::Repl repl;
+            ui::Repl repl;
+            repl.loop();
         } else if (cmd == "help") {
             // 显示帮助信息
             show_help(prog_name);

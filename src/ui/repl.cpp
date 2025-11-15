@@ -12,6 +12,7 @@
 #include "vm.hpp"
 #include "ir_gen.hpp"
 #include "parser.hpp"
+#include "project_debugger.hpp"
 
 namespace ui {
 
@@ -24,6 +25,7 @@ std::string Repl::read(const std::string& prompt) {
 }
 
 void Repl::loop() {
+    DEBUG_OUTPUT("start repl loop");
     while (is_running_) {
         auto code = read(">>>");
         add_to_history(code);
@@ -40,9 +42,9 @@ void Repl::eval_and_print(const std::string& cmd) {
 
     auto tokens = lexer.tokenize(cmd);
     auto ast = parser.parse(tokens);
-    auto ir = ir_gen.gen();
+    auto ir = ir_gen.gen(std::move(ast));
     auto [stack_top, locals] = vm.load(ir);
-    std::cout << stack_top->to_string() << std::endl;
+    std::cout << model::Object::to_string() << std::endl;
 }
 
 } // namespace ui

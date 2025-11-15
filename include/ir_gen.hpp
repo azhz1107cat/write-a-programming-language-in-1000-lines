@@ -18,7 +18,7 @@
 namespace kiz {
 
 class IRGenerator {
-    std::unique_ptr<ASTNode> ast;
+    std::unique_ptr<BlockStmt> ast;
     std::stack<size_t> block_stack;
 
     std::vector<std::string> curr_names;
@@ -29,12 +29,12 @@ class IRGenerator {
     const std::string& file_path;
 public:
     explicit IRGenerator(const std::string& file_path) : file_path(file_path) {}
-    model::Module* gen();
+    model::Module* gen(std::unique_ptr<BlockStmt> ast_into);
 
     static size_t get_or_add_name(std::vector<std::string>& names, const std::string& name);
     static size_t get_or_add_const(std::vector<model::Object*>& consts, model::Object* obj);
 
-    static void gen_mod(BlockStmt* block_stmt);
+    [[nodiscard]] model::Module* gen_mod(const std::string& module_name) const;
     void gen_block(const BlockStmt* block);
     void gen_fn_decl(FuncDefStmt* fn_decl);
 

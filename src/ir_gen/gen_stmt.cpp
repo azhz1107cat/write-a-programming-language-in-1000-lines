@@ -5,8 +5,18 @@
 
 namespace kiz {
 
-void IRGenerator::gen_mod(BlockStmt* block_stmt) {
-
+model::Module* IRGenerator::gen_mod(const std::string& module_name) const {
+    const auto code_obj = new model::CodeObject(
+        curr_code_list,
+        curr_const,
+        curr_names,
+        curr_lineno_map
+    );
+    const auto module_obj = new model::Module(
+        module_name,
+        code_obj
+    );
+    return module_obj;
 }
 
 

@@ -20,7 +20,7 @@ namespace ui {
 class Repl {
     std::string prompt_;
     std::vector<std::string> cmd_history_;
-    bool is_running_{};
+    bool is_running_;
 
     void add_to_history(const std::string& cmd) {
         if (!cmd.empty()) {
@@ -39,7 +39,9 @@ class Repl {
     }
 
 public:
-    Repl() = default;
+    Repl() {
+        is_running_ = true;
+    }
     ~Repl() = default;
 
     static std::string read(const std::string& prompt);

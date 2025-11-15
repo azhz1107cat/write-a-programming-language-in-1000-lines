@@ -27,7 +27,7 @@ public:
     void skip_start_of_block();
     [[nodiscard]] Token curr_token() const;
 
-    std::vector<std::unique_ptr<Statement>> parse(const std::vector<Token>& tokens);
+    std::unique_ptr<BlockStmt> parse(const std::vector<Token>& tokens);
 
     // parse stmt
     std::unique_ptr<Statement> parse_stmt();

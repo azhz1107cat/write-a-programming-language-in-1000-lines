@@ -36,11 +36,12 @@ size_t IRGenerator::get_or_add_const(std::vector<model::Object*>& consts, model:
     return consts.size() - 1;
 }
 
-model::Module* IRGenerator::gen() {
+model::Module* IRGenerator::gen(std::unique_ptr<BlockStmt> ast_into) {
+    ast = std::move(ast_into);
     DEBUG_OUTPUT("generating...");
     // 检查AST根节点有效性（默认模块根为BlockStmt）
     assert(ast && ast->ast_type == AstType::BlockStmt && "gen: AST根节点非BlockStmt");
-    auto* root_block = dynamic_cast<BlockStmt*>(ast.get());
+    const auto* root_block = dynamic_cast<BlockStmt*>(ast.get());
 
     // 初始化模块级代码容器
     curr_code_list.clear();
@@ -49,19 +50,9 @@ model::Module* IRGenerator::gen() {
     curr_lineno_map.clear();
 
     // 处理模块顶层节点
-    gen_mod(root_block);
+    gen_block(root_block);
 
-    // 生成模块代码对象
-    model::CodeObject* mod_code = make_code_obj();
-    assert(mod_code && "gen: 模块CodeObject创建失败");
-
-    // 初始化模块实例
-    const auto mod = new model::Module(
-        "main",
-        mod_code
-    );
-
-    return mod;
+    return gen_mod(file_path);
 }
 
 model::CodeObject* IRGenerator::make_code_obj() const {
