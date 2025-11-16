@@ -32,16 +32,7 @@ int main(const int argc, char* argv[]) {
 }
 
 /* 提供命令行帮助信息函数 */
-void show_help(const char* prog_name) {
-    printf("%s [指令] [参数]\n", prog_name);
-    printf("指令:\n");
-    printf("  没有参数      启动 REPL\n");
-    printf("  repl         启动 REPL\n");
-    printf("  <路径>        执行位于指定路径的kiz文件\n");
-    printf("  run <路径>    执行位于指定路径的kiz文件\n");
-    printf("  version      展示版本号\n");
-    printf("  help         展示帮助\n");
-}
+void show_help();
 
 void enable_ansi_escape() {
 #ifdef _WIN32
@@ -101,14 +92,14 @@ void args_parser(const int argc, char* argv[]) {
         const std::string cmd = argv[1];
         if (cmd == "version") {
             // 显示版本
-            std::cout << "kiz version :" << KIZ_VERSION << std::endl;
+            std::cout << "kiz version : " << KIZ_VERSION << std::endl;
         } else if (cmd == "repl") {
             // 显式启动REPL
             ui::Repl repl;
             repl.loop();
         } else if (cmd == "help") {
             // 显示帮助信息
-            show_help(prog_name);
+            show_help();
         } else {
             // ToDo: ...
         }
@@ -124,12 +115,62 @@ void args_parser(const int argc, char* argv[]) {
         } else {
             // 无效命令
             std::cerr << "错误: 无效指令 " << cmd << "\n";
-            show_help(prog_name);
+            show_help();
         }
         return;
     }
 
     // 参数过多 : 提示错误并显示帮助
     std::cerr << "错误: 太多参数";
-    show_help(prog_name);
+    show_help();
+}
+
+void show_help() {
+    const std::string text = R"(
+  _      _
+ | | __ (_)  ____
+ | |/ / | | |_  /
+ |   <  | |  / /
+ |_|\_\ |_| /___|
+
+
+the kiz cmd help
+===========================
+- repl
+  repl(read exec print loop)
+  Type repl to start repl
+  like this
+  ----------------------
+  | > kiz repl      |
+  ----------------------
+
+- run
+  run the kiz programming file from path
+  Type run for use this function
+  like this
+  -----------------------
+  | > kiz run demo.lm |
+  -----------------------
+  or
+  ----------------------
+  | > kiz demo.lm    |
+  ----------------------
+
+- version
+  show the version of kiz
+  Type version to see the version of kiz
+  like this
+  -----------------------
+  | > kiz version     |
+  -----------------------
+
+- help
+  show this page in order to get help
+  Type help to see the help of kiz
+  like this
+  -----------------------
+  | > kiz help        |
+  -----------------------
+)";
+    std::cout << text << std::endl;
 }

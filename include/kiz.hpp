@@ -1,8 +1,7 @@
 #pragma once
 #include <iostream>
 #include "ui/color.hpp"
-
-#define KIZ_VERSION "0.1.0"
+#include "version.hpp"
 
 // 调试模式开关
 #define IN_DEBUG
