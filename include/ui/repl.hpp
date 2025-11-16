@@ -15,12 +15,19 @@
 #include <cctype>
 #include <algorithm>
 
+#include "ir_gen.hpp"
+#include "lexer.hpp"
+#include "parser.hpp"
+
 namespace ui {
 
 class Repl {
     std::string prompt_;
     std::vector<std::string> cmd_history_;
     bool is_running_;
+    kiz::Lexer lexer_;
+    kiz::Parser parser_;
+    kiz::IRGenerator ir_gen_;
 
     void add_to_history(const std::string& cmd) {
         if (!cmd.empty()) {

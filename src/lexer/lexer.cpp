@@ -7,7 +7,7 @@
  */
 
 #include "../../include/lexer.hpp"
-#include "../include/project_debugger.hpp"
+#include "../include/kiz.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cctype>

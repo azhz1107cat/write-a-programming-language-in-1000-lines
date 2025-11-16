@@ -12,7 +12,7 @@
 
 #include <stack>
 
-#include "project_debugger.hpp"
+#include "kiz.hpp"
 #include "../libs/builtins/builtins.hpp"
 
 namespace model {
@@ -53,8 +53,9 @@ class Vm {
     const std::string& file_path;
 public:
     explicit Vm(const std::string& file_path) : file_path(file_path) {
-        DEBUG_OUTPUT("registe builtins");
+        DEBUG_OUTPUT("registering builtins...");
         builtins.insert("print", new model::CppFunction(builtin_objects::print));
+        builtins.insert("input", new model::CppFunction(builtin_objects::input));
     }
 
     VmState load(const model::Module* src_module);
@@ -73,7 +74,7 @@ public:
     void exec_NOT(const Instruction& instruction);
     void exec_OR(const Instruction& instruction);
     void exec_IS(const Instruction& instruction);
-    void exec_IN(const Instruction& instruction);
+    void exec_IN(const Instruction& instruction) const;
     void exec_MAKE_LIST(const Instruction& instruction);
     void exec_CALL(const Instruction& instruction);
     void exec_RET(const Instruction& instruction);

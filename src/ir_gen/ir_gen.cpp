@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <cassert>
 
-#include "project_debugger.hpp"
+#include "kiz.hpp"
 
 namespace kiz {
 

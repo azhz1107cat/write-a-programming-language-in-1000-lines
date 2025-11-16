@@ -2,8 +2,12 @@
 #include <iostream>
 #include "ui/color.hpp"
 
+#define KIZ_VERSION "0.1.0"
+
 // 调试模式开关
-//#define IN_DEBUG
+#define IN_DEBUG
+
+//#undef IN_DEBUG
 
 #ifdef IN_DEBUG
 #define DEBUG_OUTPUT(msg) \

@@ -15,7 +15,7 @@
 #include <memory>
 #include <vector>
 
-#include "project_debugger.hpp"
+#include "kiz.hpp"
 #include "ui/color.hpp"
 
 namespace kiz {

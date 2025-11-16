@@ -12,7 +12,7 @@
 #include "vm.hpp"
 #include "ir_gen.hpp"
 #include "parser.hpp"
-#include "project_debugger.hpp"
+#include "kiz.hpp"
 #include "ui/color.hpp"
 
 namespace ui {
@@ -45,8 +45,12 @@ void Repl::eval_and_print(const std::string& cmd) {
     auto ast = parser.parse(tokens);
     auto ir = ir_gen.gen(std::move(ast));
     auto [stack_top, locals] = vm.load(ir);
-    std::cout << stack_top->to_string() << std::endl;
-    stack_top->del_ref();
+    if (stack_top != nullptr) {
+        if (not dynamic_cast<model::Nil*>(stack_top)) {
+            std::cout << stack_top->to_string() << std::endl;
+        }
+        stack_top->del_ref();
+    }
 }
 
 } // namespace ui

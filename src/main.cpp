@@ -14,7 +14,9 @@
 #include <winnls.h>
 #endif
 
-#include <cstdio>
+#include <iostream>
+
+#include "kiz.hpp"
 /* 提供命令行帮助信息函数 */
 void show_help(const char* prog_name);
 
@@ -99,7 +101,7 @@ void args_parser(const int argc, char* argv[]) {
         const std::string cmd = argv[1];
         if (cmd == "version") {
             // 显示版本
-            printf("kiz version %s\n", "KIZ_VERSION");
+            std::cout << "kiz version :" << KIZ_VERSION << std::endl;
         } else if (cmd == "repl") {
             // 显式启动REPL
             ui::Repl repl;
