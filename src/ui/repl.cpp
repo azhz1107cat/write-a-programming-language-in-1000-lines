@@ -35,9 +35,14 @@ void Repl::loop() {
 }
 
 void Repl::eval_and_print(const std::string& cmd) {
-    auto tokens = lexer_.tokenize(cmd);
-    auto ast = parser_.parse(tokens);
-    auto ir = ir_gen_.gen(std::move(ast));
+    std::string file_path = "<shell#>";
+    kiz::Lexer lexer(file_path);
+    kiz::Parser parser(file_path);
+    kiz::IRGenerator ir_gen(file_path);
+
+    auto tokens = lexer.tokenize(cmd);
+    auto ast = parser.parse(tokens);
+    auto ir = ir_gen.gen(std::move(ast));
     auto [stack_top, locals] = vm_.load(ir);
     if (stack_top != nullptr) {
         if (not dynamic_cast<model::Nil*>(stack_top)) {
