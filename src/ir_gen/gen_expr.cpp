@@ -186,7 +186,7 @@ void IRGenerator::gen_expr(Expression* expr) {
     }
 }
 
-    void IRGenerator::gen_fn_call(CallExpr* call_expr) {
+void IRGenerator::gen_fn_call(CallExpr* call_expr) {
     assert(call_expr && "gen_fn_call: 函数调用节点为空");
     size_t arg_count = call_expr->args.size();
 

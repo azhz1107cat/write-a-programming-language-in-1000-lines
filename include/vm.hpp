@@ -11,6 +11,7 @@
 #include "../deps/hashmap.hpp"
 
 #include <stack>
+#include <tuple>
 
 #include "kiz.hpp"
 #include "../libs/builtins/builtins.hpp"
@@ -42,6 +43,7 @@ struct CallFrame {
 };
 
 class Vm {
+    // deps::HashMap<model::Module*> loaded_modules;
     std::stack<model::Object *> op_stack_;
     std::vector<model::Object*> constant_pool_;
     std::vector<std::unique_ptr<CallFrame>> call_stack_;
@@ -54,12 +56,18 @@ class Vm {
 public:
     explicit Vm(const std::string& file_path) : file_path(file_path) {
         DEBUG_OUTPUT("registering builtins...");
-        builtins.insert("print", new model::CppFunction(builtin_objects::print));
-        builtins.insert("input", new model::CppFunction(builtin_objects::input));
+        #define KIZ_FUNC(n) builtins.insert(#n, new model::CppFunction(builtin_objects::n))
+        KIZ_FUNC(print);
+        KIZ_FUNC(input);
+        #undef KIZ_FUNC
     }
 
-    VmState load(const model::Module* src_module);
+    void load(model::Module* src_module);
+    void extend_code(const model::CodeObject* code_object);
+    VmState get_vm_state();
     void exec(const Instruction& instruction);
+    std::tuple<model::Object*, model::Object*> fetch_two_from_stack_top(const std::string& curr_instruction_name);
+    static bool check_has_magic(model::Object* a, const std::string& magic_method_name);
     void exec_ADD(const Instruction& instruction);
     void exec_SUB(const Instruction& instruction);
     void exec_MUL(const Instruction& instruction);
@@ -74,8 +82,9 @@ public:
     void exec_NOT(const Instruction& instruction);
     void exec_OR(const Instruction& instruction);
     void exec_IS(const Instruction& instruction);
-    void exec_IN(const Instruction& instruction) const;
+    void exec_IN(const Instruction& instruction);
     void exec_MAKE_LIST(const Instruction& instruction);
+    void call_function(model::Object* func_obj, model::Object* args_obj);
     void exec_CALL(const Instruction& instruction);
     void exec_RET(const Instruction& instruction);
     void exec_GET_ATTR(const Instruction& instruction);

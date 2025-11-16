@@ -46,6 +46,7 @@ void Vm::exec_LOAD_CONST(const Instruction& instruction) {
         assert(false && "LOAD_CONST: 常量索引超出范围");
     }
     model::Object* const_val = constant_pool_[const_idx];
+    DEBUG_OUTPUT("ok to get load const [" + std::to_string(const_idx) + "]: "+ const_val->to_string());
     const_val->make_ref();
     op_stack_.push(const_val);
 }
@@ -89,6 +90,7 @@ void Vm::exec_SET_LOCAL(const Instruction& instruction) {
     model::Object* var_val = op_stack_.top();
     op_stack_.pop();
     var_val->make_ref();
+    DEBUG_OUTPUT("var val: " + var_val->to_string());
 
     auto var_it = curr_frame->locals.find(var_name);
     if (var_it != nullptr) {

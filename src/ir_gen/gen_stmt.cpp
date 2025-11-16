@@ -11,18 +11,21 @@ model::Module* IRGenerator::gen_mod(
     const std::vector<Instruction>& code_list,
     const std::vector<model::Object*>& consts,
     const std::vector<std::tuple<size_t, size_t>>& lineno_map
-)
-{
+) {
     const auto code_obj = new model::CodeObject(
         code_list,
         consts,
         names,
         lineno_map
     );
+    code_obj->make_ref();
+    DEBUG_OUTPUT("code object created with code list len " + std::to_string(code_list.size()));
+    assert(code_obj != nullptr);
     const auto module_obj = new model::Module(
         module_name,
         code_obj
     );
+    module_obj->make_ref();
     return module_obj;
 }
 
@@ -80,8 +83,8 @@ void IRGenerator::gen_block(const BlockStmt* block) {
                 auto* expr_stmt = dynamic_cast<ExprStmt*>(stmt.get());
                 gen_expr(expr_stmt->expr.get());
                 // curr_code_list.emplace_back(
-                //     Opcode::POP_TOP,
-                //     std::vector<size_t>{},
+                // Opcode::POP_TOP,
+                // std::vector<size_t>{},
                 //     stmt->start_ln,
                 //     stmt->end_ln
                 // );

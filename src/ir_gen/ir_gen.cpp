@@ -41,7 +41,7 @@ model::Module* IRGenerator::gen(std::unique_ptr<BlockStmt> ast_into) {
     DEBUG_OUTPUT("generating...");
     // 检查AST根节点有效性（默认模块根为BlockStmt）
     assert(ast && ast->ast_type == AstType::BlockStmt && "gen: AST根节点非BlockStmt");
-    const auto* root_block = dynamic_cast<BlockStmt*>(ast.get());
+    const auto* root_block = ast.get();
 
     // 初始化模块级代码容器
     curr_code_list.clear();

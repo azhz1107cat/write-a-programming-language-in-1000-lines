@@ -1,15 +1,17 @@
+#include <tuple>
+
 #include "models.hpp"
 #include "kiz.hpp"
 #include "vm.hpp"
 
 namespace kiz {
 
-std::tuple<model::Object*, model::Object*> Vm::fetch_top_two_from_stack(
-    str::string curr_instruction_name
+std::tuple<model::Object*, model::Object*> Vm::fetch_two_from_stack_top(
+    const std::string& curr_instruction_name
 ) {
     DEBUG_OUTPUT("exec " + curr_instruction_name + "...");
     if (op_stack_.size() < 2) {
-        assert(false && curr_instruction_name + ": 操作数栈元素不足（需≥2）");
+        assert(false && (curr_instruction_name + ": 操作数栈元素不足（需≥2）").data());
     }
     model::Object* b = op_stack_.top();
     op_stack_.pop();
@@ -18,291 +20,215 @@ std::tuple<model::Object*, model::Object*> Vm::fetch_top_two_from_stack(
     return {a, b};
 }
 
+bool Vm::check_has_magic(model::Object* a, const std::string& magic_method_name) {
+    if (a == nullptr) return false;
+
+    // 魔法方法名 : 成员变量的检查函数
+    static const std::unordered_map<std::string, std::function<bool(model::Object*)>> magic_checkers = {
+        {"add", [](auto* obj) { return obj->magic_add != nullptr; }},
+        {"sub", [](auto* obj) { return obj->magic_sub != nullptr; }},
+        {"mul", [](auto* obj) { return obj->magic_mul != nullptr; }},
+        {"div", [](auto* obj) { return obj->magic_div != nullptr; }},
+        {"pow", [](auto* obj) { return obj->magic_pow != nullptr; }},
+        {"mod", [](auto* obj) { return obj->magic_mod != nullptr; }},
+        {"in",  [](auto* obj) { return obj->magic_in != nullptr; }},
+        {"bool",[](auto* obj) { return obj->magic_bool != nullptr; }},
+        {"eq",  [](auto* obj) { return obj->magic_eq != nullptr; }},
+        {"lt",  [](auto* obj) { return obj->magic_lt != nullptr; }},
+        {"gt",  [](auto* obj) { return obj->magic_gt != nullptr; }}
+    };
+
+    const auto it = magic_checkers.find(magic_method_name);
+    if (it == magic_checkers.end()) {
+        assert(false && ("check_has_magic: 未知的魔法方法名：" + magic_method_name).data());
+    }
+
+    return it->second(a);
+}
+
 // -------------------------- 算术指令 --------------------------
 void Vm::exec_ADD(const Instruction& instruction) {
-    auto [a, b] = fetch_top_two_from_stack("OP_ADD");
+    const auto raw_call_stack_count = call_stack_.size();
 
-    Object* result;
+    DEBUG_OUTPUT("exec and...");
+    auto [a, b] = fetch_two_from_stack_top("add");
     check_has_magic(a, "add");
-    result = a_int->magic_add->call_it(a, b);
+
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
+
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_SUB(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec sub...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_SUB: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("sub");
+    check_has_magic(a, "sub");
 
-    auto* a_int = dynamic_cast<model::Int*>(a);
-    auto* b_int = dynamic_cast<model::Int*>(b);
-    if (!a_int || !b_int) {
-        assert(false && "OP_SUB: 仅支持Int类型运算");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Int();
-    result->val = a_int->val - b_int->val;
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_MUL(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec mul...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_MUL: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("mul");
+    check_has_magic(a, "mul");
 
-    auto* a_int = dynamic_cast<model::Int*>(a);
-    auto* b_int = dynamic_cast<model::Int*>(b);
-    if (!a_int || !b_int) {
-        assert(false && "OP_MUL: 仅支持Int类型运算");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Int();
-    result->val = a_int->val * b_int->val;
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_DIV(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec div...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_DIV: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("div");
+    check_has_magic(a, "div");
 
-    auto* a_int = dynamic_cast<model::Int*>(a);
-    auto* b_int = dynamic_cast<model::Int*>(b);
-    if (!a_int || !b_int) {
-        assert(false && "OP_DIV: 仅支持Int类型运算");
-    }
-    if (b_int->val == deps::BigInt(0)) {
-        assert(false && "OP_DIV: 除数不能为0");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Rational(
-        static_cast<deps::Rational>(a_int->val.operator/(b_int->val))
-    );
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_MOD(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec mod...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_MOD: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("mod");
+    check_has_magic(a, "add");
 
-    auto* a_int = dynamic_cast<model::Int*>(a);
-    auto* b_int = dynamic_cast<model::Int*>(b);
-    if (!a_int || !b_int) {
-        assert(false && "OP_MOD: 仅支持Int类型运算");
-    }
-    if (b_int->val == deps::BigInt(0)) {
-        assert(false && "OP_MOD: 除数不能为0");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Int();
-    result->val = a_int->val % b_int->val;
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_POW(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec pow...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_POW: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("pow");
+    check_has_magic(a, "pow");
 
-    auto* a_int = dynamic_cast<model::Int*>(a);
-    auto* b_int = dynamic_cast<model::Int*>(b);
-    if (!a_int || !b_int) {
-        assert(false && "OP_POW: 仅支持Int类型运算");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Int();
-    result->val = a_int->val.pow(b_int->val);
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_NEG(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec neg...");
-    if (op_stack_.empty()) {
-        assert(false && "OP_NEG: 操作数栈为空");
-    }
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("neg");
+    check_has_magic(a, "neg");
 
-    auto* a_int = dynamic_cast<model::Int*>(a);
-    if (!a_int) {
-        assert(false && "OP_NEG: 仅支持Int类型运算");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Int();
-    result->val = a_int->val * deps::BigInt(-1);
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 // -------------------------- 比较指令 --------------------------
 void Vm::exec_EQ(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec eq...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_EQ: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("eq");
+    check_has_magic(a, "eq");
 
-    bool is_equal = false;
-    if (auto* a_int = dynamic_cast<model::Int*>(a); a_int) {
-        if (auto* b_int = dynamic_cast<model::Int*>(b); b_int) {
-            is_equal = (a_int->val == b_int->val);
-        }
-    } else if (dynamic_cast<model::Nil*>(a) && dynamic_cast<model::Nil*>(b)) {
-        is_equal = true;
-    } else if (model::String* a_str = dynamic_cast<model::String*>(a); a_str) {
-        if (model::String* b_str = dynamic_cast<model::String*>(b); b_str) {
-            is_equal = (a_str->val == b_str->val);
-        }
-    } else {
-        assert(false && "OP_EQ: 不支持的类型比较");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Bool(is_equal);
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_GT(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec gt...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_GT: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("gt");
+    check_has_magic(a, "gt");
 
-    bool is_gt = false;
-    if (auto* a_int = dynamic_cast<model::Int*>(a); a_int) {
-        if (auto* b_int = dynamic_cast<model::Int*>(b); b_int) {
-            is_gt = (a_int->val > b_int->val);
-        }
-    } else {
-        assert(false && "OP_GT: 仅支持Int类型比较");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Bool(is_gt);
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 void Vm::exec_LT(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
+
     DEBUG_OUTPUT("exec lt...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_LT: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
+    auto [a, b] = fetch_two_from_stack_top("lt");
+    check_has_magic(a, "lt");
 
-    bool is_lt = false;
-    if (auto* a_int = dynamic_cast<model::Int*>(a); a_int) {
-        if (auto* b_int = dynamic_cast<model::Int*>(b); b_int) {
-            is_lt = (a_int->val < b_int->val);
-        }
-    } else {
-        assert(false && "OP_LT: 仅支持Int类型比较");
-    }
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
 
-    auto* result = new model::Bool(is_lt);
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
+    }
     result->make_ref();
     op_stack_.push(result);
 }
 
 // -------------------------- 逻辑指令 --------------------------
 void Vm::exec_AND(const Instruction& instruction) {
-    DEBUG_OUTPUT("exec and...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_AND: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
-
-    auto* a_bool = dynamic_cast<model::Bool*>(a);
-    auto* b_bool = dynamic_cast<model::Bool*>(b);
-    if (!a_bool || !b_bool) {
-        assert(false && "OP_AND: 仅支持Bool类型运算");
-    }
-
-    auto* result = new model::Bool((a_bool->val && b_bool->val));
-    result->make_ref();
-    op_stack_.push(result);
+    // Todo: ...
 }
 
 void Vm::exec_NOT(const Instruction& instruction) {
-    DEBUG_OUTPUT("exec not...");
-    if (op_stack_.empty()) {
-        assert(false && "OP_NOT: 操作数栈为空");
-    }
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
-
-    auto* a_bool = dynamic_cast<model::Bool*>(a);
-    if (!a_bool) {
-        assert(false && "OP_NOT: 仅支持Bool类型运算");
-    }
-
-    auto* result = new model::Bool(!a_bool->val);
-    result->make_ref();
-    op_stack_.push(result);
+    // Todo: ...
 }
 
 void Vm::exec_OR(const Instruction& instruction) {
-    DEBUG_OUTPUT("exec or...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_OR: 操作数栈元素不足（需≥2）");
-    }
-    model::Object* b = op_stack_.top();
-    op_stack_.pop();
-    model::Object* a = op_stack_.top();
-    op_stack_.pop();
-
-    auto* a_bool = dynamic_cast<model::Bool*>(a);
-    auto* b_bool = dynamic_cast<model::Bool*>(b);
-    if (!a_bool || !b_bool) {
-        assert(false && "OP_OR: 仅支持Bool类型运算");
-    }
-
-    auto* result = new model::Bool((a_bool->val || b_bool->val));
-    result->make_ref();
-    op_stack_.push(result);
+    // Todo: ...
 }
 
 void Vm::exec_IS(const Instruction& instruction) {
@@ -322,12 +248,21 @@ void Vm::exec_IS(const Instruction& instruction) {
 }
 
 // -------------------------- 容器指令 --------------------------
-void Vm::exec_IN(const Instruction& instruction) const {
+void Vm::exec_IN(const Instruction& instruction) {
+    const auto raw_call_stack_count = call_stack_.size();
     DEBUG_OUTPUT("exec in...");
-    if (op_stack_.size() < 2) {
-        assert(false && "OP_IN: 操作数栈元素不足（需≥2）");
+    auto [a, b] = fetch_two_from_stack_top("in");
+    check_has_magic(a, "in");
+
+    call_function(a->magic_add, new model::List({a, b}));
+    model::Object* result = op_stack_.top();
+
+
+    if (raw_call_stack_count != call_stack_.size()) {
+        exec_RET({});
     }
-    // ToDo:...
+    result->make_ref();
+    op_stack_.push(result);
 }
 
 }

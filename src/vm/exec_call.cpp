@@ -5,26 +5,7 @@
 
 namespace kiz {
 
-// -------------------------- 函数调用/返回 --------------------------
-void Vm::exec_CALL(const Instruction& instruction) {
-    DEBUG_OUTPUT("exec call...");
-
-    // 栈中至少需要 2 个元素
-    if (op_stack_.size() < 2) {
-        assert(false && "CALL: 操作数栈元素不足（需≥2：函数对象 + 参数列表）");
-    }
-    if (call_stack_.empty()) {
-        assert(false && "CALL: 无活跃调用帧");
-    }
-
-    // 弹出栈顶元素 : 函数对象
-    model::Object* func_obj = op_stack_.top();
-    op_stack_.pop();
-    func_obj->make_ref();  // 临时持有函数对象，避免中途被释放
-
-    // 弹出栈顶-1元素 : 参数列表
-    model::Object* args_obj = op_stack_.top();
-    op_stack_.pop();
+void Vm::call_function(model::Object* func_obj, model::Object* args_obj){
     auto* args_list = dynamic_cast<model::List*>(args_obj);
     if (!args_list) {
         func_obj->del_ref();  // 释放函数对象引用
@@ -37,7 +18,8 @@ void Vm::exec_CALL(const Instruction& instruction) {
         DEBUG_OUTPUT("call CppFunction...");
 
         // 调用 C++ 函数：传入参数列表，获取返回值
-        model::Object* return_val = cpp_func->func(args_list);
+        // ToDo: make sure the self var
+        model::Object* return_val = cpp_func->func(nullptr, args_list);
 
         // 管理返回值引用计数：返回值压栈前必须 make_ref
         if (return_val != nullptr) {
@@ -54,6 +36,8 @@ void Vm::exec_CALL(const Instruction& instruction) {
         // 释放临时引用
         func_obj->del_ref();
         args_obj->del_ref();
+        DEBUG_OUTPUT("ok to call CppFunction...");
+        DEBUG_OUTPUT("CppFunction return: " + return_val->to_string());
     } else if (const auto* func = dynamic_cast<model::Function*>(func_obj); func) {
         // -------------------------- 处理 Function 调用 --------------------------
         DEBUG_OUTPUT("call Function: " + func->name);
@@ -113,6 +97,31 @@ void Vm::exec_CALL(const Instruction& instruction) {
         args_obj->del_ref();
         assert(false && "CALL: 栈顶元素非Function/CppFunction类型");
     }
+}
+
+// -------------------------- 函数调用/返回 --------------------------
+void Vm::exec_CALL(const Instruction& instruction) {
+    DEBUG_OUTPUT("exec call...");
+
+    // 栈中至少需要 2 个元素
+    if (op_stack_.size() < 2) {
+        assert(false && "CALL: 操作数栈元素不足（需≥2：函数对象 + 参数列表）");
+    }
+    if (call_stack_.empty()) {
+        assert(false && "CALL: 无活跃调用帧");
+    }
+
+    // 弹出栈顶元素 : 函数对象
+    model::Object* func_obj = op_stack_.top();
+    op_stack_.pop();
+    func_obj->make_ref();  // 临时持有函数对象，避免中途被释放
+
+    // 弹出栈顶-1元素 : 参数列表
+    model::Object* args_obj = op_stack_.top();
+    op_stack_.pop();
+
+    call_function(func_obj, args_obj);
+
 }
 
 void Vm::exec_RET(const Instruction& instruction) {

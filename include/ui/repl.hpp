@@ -18,6 +18,7 @@
 #include "ir_gen.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "vm.hpp"
 
 namespace ui {
 
@@ -45,17 +46,14 @@ class Repl {
     }
 
 public:
-    Repl() {
-        is_running_ = true;
-        
-        kiz::Vm vm_("<shell#>");
-    }
+    Repl(): is_running_(true) , vm_("<shell#>") {}
+
     ~Repl() = default;
 
-    static std::string read(const std::string& prompt);
+    std::string read(const std::string& prompt);
     void loop();
 
-    static void eval_and_print(const std::string& cmd);
+    void eval_and_print(const std::string& cmd);
 
     void stop() { is_running_ = false; }
 

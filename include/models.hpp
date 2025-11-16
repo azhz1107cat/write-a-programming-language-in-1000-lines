@@ -11,6 +11,7 @@
 #include <functional>
 #include <utility>
 
+#include "kiz.hpp"
 #include "opcode.hpp"
 #include "../deps/hashmap.hpp"
 #include "../deps/bigint.hpp"
@@ -32,17 +33,17 @@ namespace model {
 class Object {
     std::atomic<size_t> refc_ = 0;  // 原子类型支持直接初始化为 0
 public:
-    Object* magic_add;
-    Object* magic_sub;
-    Object* magic_mul;
-    Object* magic_div;
-    Object* magic_pow;
-    Object* magic_mod;
-    Object* magic_in;
-    Object* magic_bool;
-    Object* magic_eq;
-    Object* magic_lt;
-    Object* magic_gt;
+    Object* magic_add{};
+    Object* magic_sub{};
+    Object* magic_mul{};
+    Object* magic_div{};
+    Object* magic_pow{};
+    Object* magic_mod{};
+    Object* magic_in{};
+    Object* magic_bool{};
+    Object* magic_eq{};
+    Object* magic_lt{};
+    Object* magic_gt{};
     deps::HashMap<Object*> attrs;
 
     void make_ref() {
@@ -64,6 +65,8 @@ public:
     }
 };
 
+class List;
+
 class CodeObject : public Object {
 public:
     std::vector<kiz::Instruction> code;
@@ -77,7 +80,15 @@ public:
     ) : code(code), consts(consts), names(names), lineno_map(lineno_map) {}
 
     [[nodiscard]] std::string to_string() const override {
-        return "[CodeObject: consts=" + std::to_string(consts.size()) + ", names=" + std::to_string(names.size()) + "]";
+        return "<CodeObject: consts=" + std::to_string(consts.size()) + ", names=" + std::to_string(names.size()) + ">";
+    }
+
+    ~CodeObject() override {
+        for (Object* const_obj : consts) {
+            if (const_obj != nullptr) {
+                const_obj->del_ref();
+            }
+        }
     }
 };
 
@@ -91,7 +102,7 @@ public:
     }
 
     [[nodiscard]] std::string to_string() const override {
-        return "[Module: name=\"" + name + "\"]";
+        return "<Module: name=\"" + name + "\">";
     }
 };
 
@@ -106,14 +117,53 @@ public:
     }
 
     [[nodiscard]] std::string to_string() const override {
-        return "[Function: name=\"" + name + "\", argc=" + std::to_string(argc) + "]";
+        return "<Function: name=\"" + name + "\", argc=" + std::to_string(argc) + ">";
+    }
+};
+
+class CppFunction : public Object {
+public:
+    std::function<Object*(Object*, List*)> func;
+    explicit CppFunction(std::function<Object*(Object*, List*)> func) : func(std::move(func)) {}
+    [[nodiscard]] std::string to_string() const override {
+        return "<CppFunction>";
+    }
+};
+
+class List : public Object {
+public:
+    std::vector<Object*> val;
+    explicit List(std::vector<Object*> val) : val(std::move(val)) {}
+    [[nodiscard]] std::string to_string() const override {
+        std::string result = "[";
+        for (size_t i = 0; i < val.size(); ++i) {
+            if (val[i] != nullptr) {
+                result += val[i]->to_string();  // 递归调用元素的 to_string
+            } else {
+                result += "Nil";
+            }
+            if (i != val.size() - 1) {
+                result += ", ";
+            }
+        }
+        result += "]";
+        return result;
     }
 };
 
 class Int : public Object {
 public:
     deps::BigInt val;
-    explicit Int(deps::BigInt val) : val(std::move(val)) {}
+    explicit Int(deps::BigInt val) : val(std::move(val)) {
+        magic_add = new CppFunction([](Object* self, const List* args) -> Object* {
+            DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments");
+            assert(args->val.size() == 2 && "function Int.add need 2 arg");
+            return new Int (
+                dynamic_cast<Int*>(args->val[0])->val
+                + dynamic_cast<Int*>(args->val[1])->val
+            );
+        });
+    }
     explicit Int() : val(deps::BigInt(0)) {}
     [[nodiscard]] std::string to_string() const override {
         return val.to_string();
@@ -135,36 +185,6 @@ public:
     explicit String(std::string val) : val(std::move(val)) {}
     [[nodiscard]] std::string to_string() const override {
         return "\"" + val + "\"";
-    }
-};
-
-class List : public Object {
-public:
-    std::vector<Object*> val;
-    explicit List(std::vector<Object*> val) : val(std::move(val)) {}
-    [[nodiscard]] std::string to_string() const override {
-        std::string result = "[";
-        for (size_t i = 0; i < val.size(); ++i) {
-            if (val[i] != nullptr) {
-                result += val[i]->to_string();  // 递归调用元素的 to_string
-            } else {
-                result += "nil";
-            }
-            if (i != val.size() - 1) {
-                result += ", ";
-            }
-        }
-        result += "]";
-        return result;
-    }
-};
-
-class CppFunction : public Object {
-public:
-    std::function<Object*(List*)> func;
-    explicit CppFunction(std::function<Object*(List*)> func) : func(std::move(func)) {}
-    [[nodiscard]] std::string to_string() const override {
-        return "[CppFunction]";
     }
 };
 
@@ -199,7 +219,7 @@ public:
     bool val;
     explicit Bool(const bool val) : val(val) {}
     [[nodiscard]] std::string to_string() const override {
-        return val ? "true" : "false";
+        return val ? "True" : "False";
     }
 };
 
@@ -207,7 +227,7 @@ class Nil : public Object {
 public:
     explicit Nil() : Object() {}
     [[nodiscard]] std::string to_string() const override {
-        return "nil";
+        return "Nil";
     }
 };
 

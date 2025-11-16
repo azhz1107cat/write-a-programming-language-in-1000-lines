@@ -35,20 +35,28 @@ void Repl::loop() {
 }
 
 void Repl::eval_and_print(const std::string& cmd) {
-    std::string file_path = "<shell#>";
+    DEBUG_OUTPUT("repl eval_and_print...");
+    const std::string file_path = "<shell#>";
     kiz::Lexer lexer(file_path);
     kiz::Parser parser(file_path);
     kiz::IRGenerator ir_gen(file_path);
 
-    auto tokens = lexer.tokenize(cmd);
+    const auto tokens = lexer.tokenize(cmd);
     auto ast = parser.parse(tokens);
-    auto ir = ir_gen.gen(std::move(ast));
-    auto [stack_top, locals] = vm_.load(ir);
+    const auto ir = ir_gen.gen(std::move(ast));
+    if (cmd_history_.size() < 2) {
+        vm_.load(ir);
+    } else {
+        assert(ir->code != nullptr && "No ir for run" );
+        vm_.extend_code(ir->code);
+    }
+
+    DEBUG_OUTPUT("repl print");
+    auto [stack_top, locals] = vm_.get_vm_state();
     if (stack_top != nullptr) {
         if (not dynamic_cast<model::Nil*>(stack_top)) {
             std::cout << stack_top->to_string() << std::endl;
         }
-        stack_top->del_ref();
     }
 }
 
