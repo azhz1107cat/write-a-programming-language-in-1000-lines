@@ -28,6 +28,7 @@ class Repl {
     kiz::Lexer lexer_;
     kiz::Parser parser_;
     kiz::IRGenerator ir_gen_;
+    kiz::Vm vm_;
 
     void add_to_history(const std::string& cmd) {
         if (!cmd.empty()) {
@@ -48,6 +49,11 @@ class Repl {
 public:
     Repl() {
         is_running_ = true;
+        std::string file_path = "<shell#>";
+        kiz::Lexer lexer_(file_path);
+        kiz::Parser parser_(file_path);
+        kiz::IRGenerator ir_gen_(file_path);
+        kiz::Vm vm_(file_path);
     }
     ~Repl() = default;
 
