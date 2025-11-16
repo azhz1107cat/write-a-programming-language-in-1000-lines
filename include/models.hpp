@@ -32,6 +32,17 @@ namespace model {
 class Object {
     std::atomic<size_t> refc_ = 0;  // 原子类型支持直接初始化为 0
 public:
+    Object* magic_add;
+    Object* magic_sub;
+    Object* magic_mul;
+    Object* magic_div;
+    Object* magic_pow;
+    Object* magic_mod;
+    Object* magic_in;
+    Object* magic_bool;
+    Object* magic_eq;
+    Object* magic_lt;
+    Object* magic_gt;
     deps::HashMap<Object*> attrs;
 
     void make_ref() {
