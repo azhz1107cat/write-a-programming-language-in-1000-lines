@@ -4,25 +4,27 @@
 
 namespace kiz {
 
-// -------------------------- 算术指令 --------------------------
-void Vm::exec_ADD(const Instruction& instruction) {
-    DEBUG_OUTPUT("exec add...");
+std::tuple<model::Object*, model::Object*> Vm::fetch_top_two_from_stack(
+    str::string curr_instruction_name
+) {
+    DEBUG_OUTPUT("exec " + curr_instruction_name + "...");
     if (op_stack_.size() < 2) {
-        assert(false && "OP_ADD: 操作数栈元素不足（需≥2）");
+        assert(false && curr_instruction_name + ": 操作数栈元素不足（需≥2）");
     }
     model::Object* b = op_stack_.top();
     op_stack_.pop();
     model::Object* a = op_stack_.top();
     op_stack_.pop();
+    return {a, b};
+}
 
-    auto* a_int = dynamic_cast<model::Int*>(a);
-    auto* b_int = dynamic_cast<model::Int*>(b);
-    if (!a_int || !b_int) {
-        assert(false && "OP_ADD: 仅支持Int类型运算");
-    }
+// -------------------------- 算术指令 --------------------------
+void Vm::exec_ADD(const Instruction& instruction) {
+    auto [a, b] = fetch_top_two_from_stack("OP_ADD");
 
-    auto* result = new model::Int();
-    result->val = a_int->val + b_int->val;
+    Object* result;
+    check_magic(a->magic_add);
+    result = a_int->magic_add->call_it(a, b);
     result->make_ref();
     op_stack_.push(result);
 }
