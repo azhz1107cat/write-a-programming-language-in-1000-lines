@@ -23,7 +23,6 @@
 namespace ui {
 
 class Repl {
-    std::string prompt_;
     std::vector<std::string> cmd_history_;
     bool is_running_;
 
@@ -46,7 +45,9 @@ class Repl {
     }
 
 public:
-    Repl(): is_running_(true) , vm_("<shell#>") {}
+    Repl(): is_running_(true) , vm_("<shell#>") {
+        std::cout << "This is the kiz REPL " << KIZ_VERSION << "\n" << std::endl;
+    }
 
     ~Repl() = default;
 
