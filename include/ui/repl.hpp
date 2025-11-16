@@ -47,11 +47,8 @@ class Repl {
 public:
     Repl() {
         is_running_ = true;
-        std::string file_path = "<shell#>";
-        kiz::Lexer lexer_(file_path);
-        kiz::Parser parser_(file_path);
-        kiz::IRGenerator ir_gen_(file_path);
-        kiz::Vm vm_(file_path);
+        
+        kiz::Vm vm_("<shell#>");
     }
     ~Repl() = default;
 
