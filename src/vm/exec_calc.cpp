@@ -23,7 +23,7 @@ void Vm::exec_ADD(const Instruction& instruction) {
     auto [a, b] = fetch_top_two_from_stack("OP_ADD");
 
     Object* result;
-    check_magic(a->magic_add);
+    check_has_magic(a, "add");
     result = a_int->magic_add->call_it(a, b);
     result->make_ref();
     op_stack_.push(result);
