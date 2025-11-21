@@ -437,36 +437,36 @@ public:
     }
 
     /**
- * @brief 幂运算：计算 base^exp（this 为底数，other 为指数）
- * 规则：
- * 1. 指数必须为非负整数（负指数会导致分数，BigInt 不支持，断言报错）；
- * 2. 任何数的 0 次幂 = 1（包括 0^0，编程中默认处理为 1）；
- * 3. 0 的正次幂 = 0；
- * 4. 负数的偶次幂为正，奇次幂为负。
- */
+     * @brief 幂运算：计算 base^exp（this 为底数，other 为指数）
+     * 规则：
+     * 1. 指数必须为非负整数（负指数会导致分数，BigInt 不支持，断言报错）；
+     * 2. 任何数的 0 次幂 = 1（包括 0^0，编程中默认处理为 1）；
+     * 3. 0 的正次幂 = 0；
+     * 4. 负数的偶次幂为正，奇次幂为负。
+     */
     BigInt pow(const BigInt& other) const {
-        // 断言1：指数必须为非负整数
+        // 指数必须为非负整数
         assert(!other.is_negative_ && "BigInt pow: 指数不支持负数（BigInt 仅存整数）");
 
         const BigInt& exp = other;
         const BigInt zero(0);
         const BigInt one(1);
 
-        // 边界情况1：指数为 0 → 结果为 1
+        // 边界情况：指数为 0 → 结果为 1
         if (exp == zero) {
             return one;
         }
 
-        // 边界情况2：底数为 0 → 结果为 0（指数为正）
+        // 边界情况：底数为 0 → 结果为 0（指数为正）
         if (*this == zero) {
             return zero;
         }
 
-        // 步骤1：提取底数的绝对值（后续统一计算正数幂，最后处理符号）
+        // 提取底数的绝对值（后续统一计算正数幂，最后处理符号）
         BigInt base_abs = this->abs();
-        // 步骤2：快速幂计算（处理正整数幂）
+        // 快速幂计算（处理正整数幂）
         BigInt result_abs = fast_pow_unsigned(base_abs, exp);
-        // 步骤3：确定结果符号（仅当底数为负且指数为奇数时，结果为负）
+        // 确定结果符号（仅当底数为负且指数为奇数时，结果为负）
         bool is_result_neg = this->is_negative_ && (exp % BigInt(2) == one);
         result_abs.is_negative_ = is_result_neg;
 
