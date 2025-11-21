@@ -40,7 +40,7 @@ inline auto int_div = [](Object* self, const List* args) -> Object* {
     
     auto self_int = dynamic_cast<Int*>(self);
     auto another_int = dynamic_cast<Int*>(args->val[0]);
-    return new Int(self_int->val / another_int->val);
+    return new Rational(self_int->val , another_int->val);
 };
 
 // 整数幂运算：self ^ args[0]（self的args[0]次方）
