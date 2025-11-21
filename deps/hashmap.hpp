@@ -267,7 +267,7 @@ public:
         return *this;
     }
 
-    // 2. 修复移动赋值运算符
+    // 修复移动赋值运算符
     HashMap& operator=(HashMap&& other) noexcept {
         if (this == &other) return *this; // 自赋值检查
 
