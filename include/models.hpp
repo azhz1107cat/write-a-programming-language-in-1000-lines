@@ -159,10 +159,11 @@ public:
             DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments");
             assert(args->val.size() == 2 && "function Int.add need 2 arg");
             return new Int (
-                dynamic_cast<Int*>(args->val[0])->val
+                dynamic_cast<Int*>(self)->val
                 + dynamic_cast<Int*>(args->val[1])->val
             );
         });
+
     }
     explicit Int() : val(deps::BigInt(0)) {}
     [[nodiscard]] std::string to_string() const override {
