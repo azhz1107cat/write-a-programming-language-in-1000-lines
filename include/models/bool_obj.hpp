@@ -1,3 +1,6 @@
+#pragma once
+#include "models.hpp"
+
 namespace model {
 
 // 布尔值相等判断：self == args[0]（仅支持Bool与Bool比较）

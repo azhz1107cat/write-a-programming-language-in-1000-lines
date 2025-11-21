@@ -7,20 +7,15 @@
  */
 #pragma once
 
-#include "../deps/bigint.hpp"
 #include "../deps/hashmap.hpp"
 
 #include <stack>
 #include <tuple>
 
 #include "kiz.hpp"
+#include "models.hpp"
 #include "../libs/builtins/builtins.hpp"
 
-namespace model {
-class Module;
-class CodeObject;
-class Object;
-}
 
 namespace kiz {
 
@@ -60,6 +55,9 @@ public:
         KIZ_FUNC(print);
         KIZ_FUNC(input);
         #undef KIZ_FUNC
+
+        DEBUG_OUTPUT("registering magic methods...");
+        model::registering_magic_methods();
     }
 
     void load(model::Module* src_module);
@@ -84,7 +82,7 @@ public:
     void exec_IS(const Instruction& instruction);
     void exec_IN(const Instruction& instruction);
     void exec_MAKE_LIST(const Instruction& instruction);
-    void call_function(model::Object* func_obj, model::Object* args_obj);
+    void call_function(model::Object* func_obj, model::Object* args_obj, model::Object* self);
     void exec_CALL(const Instruction& instruction);
     void exec_RET(const Instruction& instruction);
     void exec_GET_ATTR(const Instruction& instruction);

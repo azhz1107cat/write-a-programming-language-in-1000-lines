@@ -1,3 +1,6 @@
+#pragma once
+#include "models.hpp"
+
 namespace model {
 
 // Rational.add：有理数加法（self + 传入Rational，返回新Rational）

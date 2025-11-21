@@ -9,7 +9,7 @@ namespace kiz {
 std::tuple<model::Object*, model::Object*> Vm::fetch_two_from_stack_top(
     const std::string& curr_instruction_name
 ) {
-    DEBUG_OUTPUT("exec " + curr_instruction_name + "...");
+    DEBUG_OUTPUT("exec " + curr_instruction_name + " then fetch two from stack top");
     if (op_stack_.size() < 2) {
         assert(false && (curr_instruction_name + ": 操作数栈元素不足（需≥2）").data());
     }
@@ -50,11 +50,12 @@ bool Vm::check_has_magic(model::Object* a, const std::string& magic_method_name)
 void Vm::exec_ADD(const Instruction& instruction) {
     const auto raw_call_stack_count = call_stack_.size();
 
-    DEBUG_OUTPUT("exec and...");
+    DEBUG_OUTPUT("exec add...");
     auto [a, b] = fetch_two_from_stack_top("add");
+    DEBUG_OUTPUT("a is " + a->to_string() + ", b is " + b->to_string());
     check_has_magic(a, "add");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -71,7 +72,7 @@ void Vm::exec_SUB(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("sub");
     check_has_magic(a, "sub");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -88,7 +89,7 @@ void Vm::exec_MUL(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("mul");
     check_has_magic(a, "mul");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -105,7 +106,7 @@ void Vm::exec_DIV(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("div");
     check_has_magic(a, "div");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -122,7 +123,7 @@ void Vm::exec_MOD(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("mod");
     check_has_magic(a, "add");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -139,7 +140,7 @@ void Vm::exec_POW(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("pow");
     check_has_magic(a, "pow");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -156,7 +157,7 @@ void Vm::exec_NEG(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("neg");
     check_has_magic(a, "neg");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -174,7 +175,7 @@ void Vm::exec_EQ(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("eq");
     check_has_magic(a, "eq");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -191,7 +192,7 @@ void Vm::exec_GT(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("gt");
     check_has_magic(a, "gt");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -208,7 +209,7 @@ void Vm::exec_LT(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("lt");
     check_has_magic(a, "lt");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -220,15 +221,15 @@ void Vm::exec_LT(const Instruction& instruction) {
 
 // -------------------------- 逻辑指令 --------------------------
 void Vm::exec_AND(const Instruction& instruction) {
-    // Todo: ...
+    // a: ...
 }
 
 void Vm::exec_NOT(const Instruction& instruction) {
-    // Todo: ...
+    // a: ...
 }
 
 void Vm::exec_OR(const Instruction& instruction) {
-    // Todo: ...
+    // a: ...
 }
 
 void Vm::exec_IS(const Instruction& instruction) {
@@ -254,7 +255,7 @@ void Vm::exec_IN(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("in");
     check_has_magic(a, "in");
 
-    call_function(a->magic_add, new model::List({a, b}));
+    call_function(a->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
 

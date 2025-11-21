@@ -1,3 +1,6 @@
+#pragma once
+#include "models.hpp"
+
 namespace model {
 
 //  List.add：拼接另一个List（self + 传入List，返回新List）
@@ -28,11 +31,11 @@ inline auto list_mul = [](Object* self, const List* args) -> Object* {
     
     auto times_int = dynamic_cast<Int*>(args->val[0]);
     assert(times_int != nullptr && "List.mul only supports Int type argument");
-    assert(times_int->val >= 0 && "List.mul requires non-negative integer argument");
+    assert(times_int->val >= deps::BigInt(0) && "List.mul requires non-negative integer argument");
     
     std::vector<Object*> new_vals;
-    int times = times_int->val;
-    for (int i = 0; i < times; ++i) {
+    deps::BigInt times = times_int->val;
+    for (deps::BigInt i = deps::BigInt(0); i < times; i+=deps::BigInt(1)) {
         new_vals.insert(new_vals.end(), self_list->val.begin(), self_list->val.end());
     }
     

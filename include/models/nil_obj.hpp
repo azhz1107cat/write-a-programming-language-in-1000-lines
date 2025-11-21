@@ -1,3 +1,6 @@
+#pragma once
+#include "models.hpp"
+
 namespace model {
 
 // Nil 相等判断：仅当另一个对象也是Nil时返回true

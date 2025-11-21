@@ -1,3 +1,6 @@
+#pragma once
+#include "models.hpp"
+
 namespace model {
 
 // Dictionary.add：添加键值对 self + x（key: String，value: 任意Object），返回新Dictionary（不可变语义）

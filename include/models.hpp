@@ -31,20 +31,20 @@ struct Instruction {
 namespace model {
 
 class Object {
-    std::atomic<size_t> refc_ = 0;  // 原子类型支持直接初始化为 0
+    std::atomic<size_t> refc_ = 0;
 public:
-    Object* magic_add{};
-    Object* magic_sub{};
-    Object* magic_mul{};
-    Object* magic_div{};
-    Object* magic_pow{};
-    Object* magic_mod{};
-    Object* magic_in{};
-    Object* magic_bool{};
-    Object* magic_eq{};
-    Object* magic_lt{};
-    Object* magic_gt{};
-    deps::HashMap<Object*> attrs;
+    static Object* magic_add;
+    static Object* magic_sub;
+    static Object* magic_mul;
+    static Object* magic_div;
+    static Object* magic_pow;
+    static Object* magic_mod;
+    static Object* magic_in;
+    static Object* magic_bool;
+    static Object* magic_eq;
+    static Object* magic_lt;
+    static Object* magic_gt;
+    static deps::HashMap<Object*> attrs;
 
     void make_ref() {
         refc_.fetch_add(1, std::memory_order_relaxed);
@@ -154,17 +154,7 @@ public:
 class Int : public Object {
 public:
     deps::BigInt val;
-    explicit Int(deps::BigInt val) : val(std::move(val)) {
-        magic_add = new CppFunction([](Object* self, const List* args) -> Object* {
-            DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments");
-            assert(args->val.size() == 2 && "function Int.add need 2 arg");
-            return new Int (
-                dynamic_cast<Int*>(self)->val
-                + dynamic_cast<Int*>(args->val[1])->val
-            );
-        });
-
-    }
+    explicit Int(deps::BigInt val) : val(std::move(val)) {}
     explicit Int() : val(deps::BigInt(0)) {}
     [[nodiscard]] std::string to_string() const override {
         return val.to_string();
@@ -231,5 +221,7 @@ public:
         return "Nil";
     }
 };
+
+void registering_magic_methods();
 
 };

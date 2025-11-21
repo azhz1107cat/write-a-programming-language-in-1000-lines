@@ -1,3 +1,6 @@
+#pragma once
+#include "models.hpp"
+
 namespace model {
 
 // 整数加法：self + args[0]
@@ -36,11 +39,11 @@ inline auto int_mul = [](Object* self, const List* args) -> Object* {
 inline auto int_div = [](Object* self, const List* args) -> Object* {
     DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments (int_div)");
     assert(args->val.size() == 1 && "function Int.div need 1 arg");
-    assert(dynamic_cast<Int*>(args->val[0])->val != 0 && "division by zero");
+    assert(dynamic_cast<Int*>(args->val[0])->val != deps::BigInt(0) && "division by zero");
     
     auto self_int = dynamic_cast<Int*>(self);
     auto another_int = dynamic_cast<Int*>(args->val[0]);
-    return new Rational(self_int->val , another_int->val);
+    return new Rational (operator/(self_int->val , another_int->val));
 };
 
 // 整数幂运算：self ^ args[0]（self的args[0]次方）
@@ -50,23 +53,25 @@ inline auto int_pow = [](Object* self, const List* args) -> Object* {
     
     auto self_int = dynamic_cast<Int*>(self);
     auto exp_int = dynamic_cast<Int*>(args->val[0]);
-    return new Int(self_int.pow(exp_int));
+    return new Int(self_int->val.pow(exp_int->val));
 };
 
 // 整数取模：self % args[0]（余数与除数同号）
 inline auto int_mod = [](Object* self, const List* args) -> Object* {
     DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments (int_mod)");
     assert(args->val.size() == 1 && "function Int.mod need 1 arg");
-    assert(dynamic_cast<Int*>(args->val[0])->val != 0 && "mod by zero");
+    assert(dynamic_cast<Int*>(args->val[0])->val != deps::BigInt(0) && "mod by zero");
     
     auto self_int = dynamic_cast<Int*>(self);
     auto another_int = dynamic_cast<Int*>(args->val[0]);
-    int remainder = self_int->val % another_int->val;
+    deps::BigInt remainder = self_int->val % another_int->val;
     // 修正余数符号（确保与除数同号）
-    if (remainder != 0 && (self_int->val < 0) != (another_int->val < 0)) {
+    if (remainder != deps::BigInt(0)
+        and self_int->val < deps::BigInt(0) != another_int->val < deps::BigInt(0)
+    ) {
         remainder += another_int->val;
     }
-    return new Int(remainder);
+    return new Int(deps::BigInt(remainder));
 };
 
 // 相等判断：self == args[0]（返回Bool对象）

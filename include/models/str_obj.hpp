@@ -1,3 +1,6 @@
+#pragma once
+#include "models.hpp"
+
 namespace model {
 
 // String.add：字符串拼接（self + 传入String，返回新String，不修改原对象）
@@ -25,11 +28,11 @@ inline auto str_mul = [](Object* self, const List* args) -> Object* {
     
     auto times_int = dynamic_cast<Int*>(args->val[0]);
     assert(times_int != nullptr && "String.mul only supports Int type argument");
-    assert(times_int->val >= 0 && "String.mul requires non-negative integer argument");
+    assert(times_int->val >= deps::BigInt(0) && "String.mul requires non-negative integer argument");
     
     std::string result;
-    int times = times_int->val;
-    for (int i = 0; i < times; ++i) {
+    deps::BigInt times = times_int->val;
+    for (deps::BigInt i = deps::BigInt(0); i < times; i+=deps::BigInt(1)) {
         result += self_str->val;
     }
     

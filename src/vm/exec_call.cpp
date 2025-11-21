@@ -5,7 +5,7 @@
 
 namespace kiz {
 
-void Vm::call_function(model::Object* func_obj, model::Object* args_obj){
+void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::Object* self=nullptr){
     auto* args_list = dynamic_cast<model::List*>(args_obj);
     if (!args_list) {
         func_obj->del_ref();  // 释放函数对象引用
@@ -17,9 +17,7 @@ void Vm::call_function(model::Object* func_obj, model::Object* args_obj){
         // -------------------------- 处理 CppFunction 调用 --------------------------
         DEBUG_OUTPUT("call CppFunction...");
 
-        // 调用 C++ 函数：传入参数列表，获取返回值
-        // ToDo: make sure the self var
-        model::Object* return_val = cpp_func->func(nullptr, args_list);
+        model::Object* return_val = cpp_func->func(self, args_list);
 
         // 管理返回值引用计数：返回值压栈前必须 make_ref
         if (return_val != nullptr) {
