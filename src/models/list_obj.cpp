@@ -18,7 +18,7 @@ inline auto list_add = [](Object* self, const List* args) -> Object* {
     return new List(std::move(new_vals));
 };
 
-//LList.mul：重复自身n次 self * n
+// List.mul：重复自身n次 self * n
 inline auto list_mul = [](Object* self, const List* args) -> Object* {
     DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments (list_mul)");
     assert(args->val.size() == 1 && "function List.mul need 1 arg");
@@ -39,7 +39,7 @@ inline auto list_mul = [](Object* self, const List* args) -> Object* {
     return new List(std::move(new_vals));
 };
 
-// 3. List.eq：判断两个List是否相等
+// List.eq：判断两个List是否相等
 inline auto list_eq = [](Object* self, const List* args) -> Object* {
     DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments (list_eq)");
     assert(args->val.size() == 1 && "function List.eq need 1 arg");
@@ -77,6 +77,46 @@ inline auto list_eq = [](Object* self, const List* args) -> Object* {
     }
     
     return new Bool(true);
+};
+
+// List.contains：判断列表是否包含目标元素
+inline auto list_contains = [](Object* self, const List* args) -> Object* {
+    DEBUG_OUTPUT("You given " + std::to_string(args->val.size()) + " arguments (list_contains)");
+    assert(args->val.size() == 1 && "function List.contains need 1 arg");
+    
+    auto self_list = dynamic_cast<List*>(self);
+    assert(self_list != nullptr && "list_contains must be called by List object");
+    
+    Object* target_elem = args->val[0];
+    assert(target_elem != nullptr && "List.contains target argument cannot be nullptr");
+    
+    // 遍历列表元素，逐个判断是否与目标元素相等
+    for (Object* elem : self_list->val) {
+        bool elem_equal = false;
+        
+        // 按元素类型匹配校验（与list_eq逻辑完全一致，确保行为统一）
+        if (auto elem_int = dynamic_cast<Int*>(elem); elem_int) {
+            auto target_int = dynamic_cast<Int*>(target_elem);
+            elem_equal = (target_int && elem_int->val == target_int->val);
+        } else if (auto elem_bool = dynamic_cast<Bool*>(elem); elem_bool) {
+            auto target_bool = dynamic_cast<Bool*>(target_elem);
+            elem_equal = (target_bool && elem_bool->val == target_bool->val);
+        } else if (auto elem_nil = dynamic_cast<Nil*>(elem); elem_nil) {
+            auto target_nil = dynamic_cast<Nil*>(target_elem);
+            elem_equal = (target_nil != nullptr);
+        } else if (auto elem_str = dynamic_cast<String*>(elem); elem_str) {
+            auto target_str = dynamic_cast<String*>(target_elem);
+            elem_equal = (target_str && elem_str->val == target_str->val);
+        }
+        
+        // 找到匹配元素，立即返回true
+        if (elem_equal) {
+            return new Bool(true);
+        }
+    }
+    
+    // 遍历完未找到匹配元素，返回false
+    return new Bool(false);
 };
 
 }  // namespace model
