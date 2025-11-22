@@ -101,7 +101,17 @@ void args_parser(const int argc, char* argv[]) {
             // 显示帮助信息
             show_help();
         } else {
-            // ToDo: ...
+            std::string path = argv[2];
+            const auto content = util::open_new_kiz_file(path);
+            kiz::Lexer lexer(path);
+            kiz::Parser parser(path);
+            kiz::IrGenerator ir_gen(path);
+            kiz::Vm vm(path);
+            
+            const auto tokens = lexer.tokenize(content);
+            const auto ast = parser.parse(tokens);
+            const auto ir = ir_gen.gen(ast);
+            vm.load(ir);
         }
         return;
     }
@@ -111,7 +121,16 @@ void args_parser(const int argc, char* argv[]) {
         const std::string cmd = argv[1];
         if (cmd == "run") {
             std::string path = argv[2];
-            // ToDo: ...
+            const auto content = util::open_new_kiz_file(path);
+            kiz::Lexer lexer(path);
+            kiz::Parser parser(path);
+            kiz::IrGenerator ir_gen(path);
+            kiz::Vm vm(path);
+            
+            const auto tokens = lexer.tokenize(content);
+            const auto ast = parser.parse(tokens);
+            const auto ir = ir_gen.gen(ast);
+            vm.load(ir);
         } else {
             // 无效命令
             std::cerr << "错误: 无效指令 " << cmd << "\n";
