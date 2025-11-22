@@ -168,7 +168,7 @@ the kiz cmd help
   Type run for use this function
   like this
   -----------------------
-  | > kiz run demo.kzi |
+  | > kiz run demo.kiz |
   -----------------------
   or
   ----------------------
