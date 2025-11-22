@@ -46,6 +46,25 @@ public:
     static Object* magic_gt;
     static deps::HashMap<Object*> attrs;
 
+    // 对象类型枚举
+    enum class ObjectType {
+        OT_Nil, OT_Bool, OT_Int, OT_Rational, OT_String,
+        OT_List, OT_Dictionary, OT_CodeObject, OT_Function,
+        OT_CppFunction, OT_Module
+    };
+
+    // 获取实际类型的虚函数
+    [[nodiscard]] virtual ObjectType get_type() const = 0;
+
+    // 动态转换模板函数
+    template <typename T>
+    T* dyn_cast() {
+        if (this->get_type() == T::TYPE) {
+            return static_cast<T*>(this);
+        }
+        return nullptr;
+    }
+
     void make_ref() {
         refc_.fetch_add(1, std::memory_order_relaxed);
     }
@@ -73,6 +92,10 @@ public:
     std::vector<Object*> consts;
     std::vector<std::string> names;
     std::vector<std::tuple<size_t, size_t>> lineno_map;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_CodeObject;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit CodeObject(const std::vector<kiz::Instruction>& code,
         const std::vector<Object*>& consts,
         const std::vector<std::string>& names,
@@ -97,6 +120,10 @@ public:
     std::string name;
     CodeObject *code = nullptr;
     deps::HashMap<Object*> attrs;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_Module;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit Module(std::string name, CodeObject *code) : name(std::move(name)), code(code) {
         code->make_ref();
     }
@@ -111,6 +138,10 @@ public:
     std::string name;
     CodeObject *code = nullptr;
     size_t argc = 0;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_Function;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit Function(std::string name, CodeObject *code, const size_t argc
     ) : name(std::move(name)), code(code), argc(argc) {
         code->make_ref();
@@ -124,6 +155,10 @@ public:
 class CppFunction : public Object {
 public:
     std::function<Object*(Object*, List*)> func;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_CppFunction;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit CppFunction(std::function<Object*(Object*, List*)> func) : func(std::move(func)) {}
     [[nodiscard]] std::string to_string() const override {
         return "<CppFunction>";
@@ -133,6 +168,10 @@ public:
 class List : public Object {
 public:
     std::vector<Object*> val;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_List;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit List(std::vector<Object*> val) : val(std::move(val)) {}
     [[nodiscard]] std::string to_string() const override {
         std::string result = "[";
@@ -154,6 +193,10 @@ public:
 class Int : public Object {
 public:
     deps::BigInt val;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_Int;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit Int(deps::BigInt val) : val(std::move(val)) {}
     explicit Int() : val(deps::BigInt(0)) {}
     [[nodiscard]] std::string to_string() const override {
@@ -164,6 +207,10 @@ public:
 class Rational : public Object {
 public:
     deps::Rational val;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_Rational;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit Rational(const deps::Rational& val) : val(val) {}
     [[nodiscard]] std::string to_string() const override {
         return val.numerator.to_string() + "/" + val.denominator.to_string();
@@ -173,6 +220,10 @@ public:
 class String : public Object {
 public:
     std::string val;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_String;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit String(std::string val) : val(std::move(val)) {}
     [[nodiscard]] std::string to_string() const override {
         return "\"" + val + "\"";
@@ -182,6 +233,10 @@ public:
 class Dictionary : public Object {
 public:
     deps::HashMap<Object*> attrs;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_Dictionary;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit Dictionary(const deps::HashMap<Object*>& attrs) : attrs(attrs) {}
     explicit Dictionary() {
         this->attrs = deps::HashMap<Object*>{};
@@ -208,6 +263,10 @@ public:
 class Bool : public Object {
 public:
     bool val;
+
+    static constexpr ObjectType TYPE = ObjectType::OT_Bool;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit Bool(const bool val) : val(val) {}
     [[nodiscard]] std::string to_string() const override {
         return val ? "True" : "False";
@@ -216,6 +275,10 @@ public:
 
 class Nil : public Object {
 public:
+
+    static constexpr ObjectType TYPE = ObjectType::OT_Nil;
+    [[nodiscard]] ObjectType get_type() const override { return TYPE; }
+
     explicit Nil() : Object() {}
     [[nodiscard]] std::string to_string() const override {
         return "Nil";
