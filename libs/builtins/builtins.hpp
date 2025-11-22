@@ -8,13 +8,30 @@ inline model::Object* get_one_arg(const model::List* args) {
     assert(false && "函数参数不足一个");
 }
 
-inline model::Object* find_based_object(model::Object* src_obj) {
+inline model::Object* check_based_object_inner(
+    model::Object* src_obj, 
+    model::Object* for_check_obj,
+    std::unordered_set<model::Object*>& visited
+) {
     if (src_obj == nullptr) return nullptr;
+    // 闭环检测
+    if (visited.count(src_obj)) return new model::Bool(false);
+    visited.insert(src_obj);
+
+    // 查找__parent__属性
     auto it = src_obj->attrs.find("__parent__");
     if (it == nullptr) {
-        return src_obj;
+        return new model::Bool(false);
     }
-    return find_based_object(it->value);
+    // 找到目标返回true，否则递归检查父对象
+    if (it->value == for_check_obj) return new model::Bool(true);
+    return check_based_object_inner(it->value, for_check_obj, visited);
+}
+
+// 对外接口
+model::Object* check_based_object(model::Object* src_obj, model::Object* for_check_obj) {
+    std::unordered_set<model::Object*> visited; // 每次调用新建集合
+    return check_based_object_inner(src_obj, for_check_obj, visited);
 }
 
 namespace builtin_objects {
@@ -43,7 +60,7 @@ inline auto isinstance = [](model::Object* self, const model::List* args) -> mod
 
     const auto a = args[0];
     const auto b = args[1];
-    // todo: find_based_object(a) 
+    return check_based_object(a, b);
     
 };
 
