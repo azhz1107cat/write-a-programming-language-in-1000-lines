@@ -55,7 +55,7 @@ void Vm::exec_ADD(const Instruction& instruction) {
     DEBUG_OUTPUT("a is " + a->to_string() + ", b is " + b->to_string());
     check_has_magic(a, "add");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -72,7 +72,7 @@ void Vm::exec_SUB(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("sub");
     check_has_magic(a, "sub");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_sub, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -89,7 +89,7 @@ void Vm::exec_MUL(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("mul");
     check_has_magic(a, "mul");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_mul, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -106,7 +106,7 @@ void Vm::exec_DIV(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("div");
     check_has_magic(a, "div");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_div, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -123,7 +123,7 @@ void Vm::exec_MOD(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("mod");
     check_has_magic(a, "add");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_mod, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -140,7 +140,7 @@ void Vm::exec_POW(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("pow");
     check_has_magic(a, "pow");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_pow, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -155,15 +155,16 @@ void Vm::exec_NEG(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec neg...");
     auto [a, b] = fetch_two_from_stack_top("neg");
-    check_has_magic(a, "neg");
+    /* check_has_magic(a, "neg");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_add, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
+    result->make_ref(); */
+    // todo: ...
     op_stack_.push(result);
 }
 
@@ -175,7 +176,7 @@ void Vm::exec_EQ(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("eq");
     check_has_magic(a, "eq");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_eq, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -192,7 +193,7 @@ void Vm::exec_GT(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("gt");
     check_has_magic(a, "gt");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_gt, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -209,7 +210,7 @@ void Vm::exec_LT(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("lt");
     check_has_magic(a, "lt");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_lt, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
@@ -255,7 +256,7 @@ void Vm::exec_IN(const Instruction& instruction) {
     auto [a, b] = fetch_two_from_stack_top("in");
     check_has_magic(a, "in");
 
-    call_function(a->magic_add, new model::List({b}), a);
+    call_function(a->dyn_cast()->magic_in, new model::List({b}), a);
     model::Object* result = op_stack_.top();
 
 
