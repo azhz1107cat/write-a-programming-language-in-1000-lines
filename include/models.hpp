@@ -291,6 +291,10 @@ public:
     }
 };
 
+deps::HashMap std_modules {} ;
+
 void registering_magic_methods();
+
+void registering_std_modules();
 
 };
