@@ -54,6 +54,7 @@ public:
         #define KIZ_FUNC(n) builtins.insert(#n, new model::CppFunction(builtin_objects::n))
         KIZ_FUNC(print);
         KIZ_FUNC(input);
+        KIZ_FUNC(isintance);
         #undef KIZ_FUNC
 
         DEBUG_OUTPUT("registering magic methods...");
