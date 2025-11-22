@@ -154,6 +154,7 @@ public:
 
 class CppFunction : public Object {
 public:
+    std::string name="";
     std::function<Object*(Object*, List*)> func;
 
     static constexpr ObjectType TYPE = ObjectType::OT_CppFunction;
@@ -161,8 +162,13 @@ public:
 
     explicit CppFunction(std::function<Object*(Object*, List*)> func) : func(std::move(func)) {}
     [[nodiscard]] std::string to_string() const override {
-        return "<CppFunction>";
-    }
+    return "<CppFunction" + 
+           (name.empty() 
+            ? "" 
+            : ": name=\"" + name + "\""
+            ) 
+            + ">";
+}
 };
 
 class List : public Object {
