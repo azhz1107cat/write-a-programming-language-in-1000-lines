@@ -168,11 +168,11 @@ the kiz cmd help
   Type run for use this function
   like this
   -----------------------
-  | > kiz run demo.lm |
+  | > kiz run demo.kzi |
   -----------------------
   or
   ----------------------
-  | > kiz demo.lm    |
+  | > kiz demo.kiz    |
   ----------------------
 
 - version
