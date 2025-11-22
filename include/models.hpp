@@ -291,7 +291,7 @@ public:
     }
 };
 
-deps::HashMap std_modules {} ;
+deps::HashMap<Object*> std_modules;
 
 void registering_magic_methods();
 
