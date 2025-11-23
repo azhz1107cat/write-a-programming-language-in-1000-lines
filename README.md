@@ -1,6 +1,6 @@
 # Kiz-lang
 
-**developing...**
+## developing...
 
 ---
 
