@@ -8,34 +8,20 @@
 
 
 namespace kiz {
+
 std::unique_ptr<Expression> Parser::parse_expression() {
     DEBUG_OUTPUT("parse the expression...");
-    return parse_logical_or();
+    return parse_and_or(); // 直接调用合并后的函数
 }
 
-// 处理 or
-std::unique_ptr<Expression> Parser::parse_logical_or() {
-    DEBUG_OUTPUT("parsing logical_or...");
-    auto node = parse_logical_and(); // 先解析 and
-    while (curr_token().type == TokenType::Or) {
-        auto op_token = skip_token("or");
-        auto right = parse_logical_and();
-        node = std::make_unique<BinaryExpr>(
-            std::move(op_token.text),
-            std::move(node),
-            std::move(right)
-        );
-    }
-    return node;
-}
-
-// 处理 and
-std::unique_ptr<Expression> Parser::parse_logical_and() {
-    DEBUG_OUTPUT("parsing logical_and...");
+// 处理 and/or（优先级相同，左结合）
+std::unique_ptr<Expression> Parser::parse_and_or() {
+    DEBUG_OUTPUT("parsing and/or expression...");
     auto node = parse_comparison();
-    while (curr_token().type == TokenType::And) {
-        auto op_token = skip_token("and");
-        auto right = parse_comparison();
+    
+    while (curr_token().type == TokenType::And || curr_token().type == TokenType::Or) {
+        auto op_token = skip_token(curr_token().text);
+        auto right = parse_comparison(); // 解析右侧比较表达式
         node = std::make_unique<BinaryExpr>(
             std::move(op_token.text),
             std::move(node),
