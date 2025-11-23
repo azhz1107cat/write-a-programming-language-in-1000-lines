@@ -11,11 +11,54 @@
 #include <functional>
 #include <utility>
 
-#include "kiz.hpp"
+#include "kiz.hpp" // 不能删 !!!
 #include "opcode.hpp"
 #include "../deps/hashmap.hpp"
 #include "../deps/bigint.hpp"
 #include "../deps/rational.hpp"
+
+
+// 获取对象的魔法方法（参数：对象指针、魔法方法名，如add/mul/eq）
+#define GET_MAGIC_METHOD(obj_ptr, method_name) \
+    ([&]() -> model::Object* { \
+        if (!obj_ptr) { \
+            DEBUG_OUTPUT("GET_MAGIC_METHOD: obj_ptr is nullptr"); \
+            return nullptr; \
+        } \
+        switch (obj_ptr->get_type()) { \
+            case model::Object::ObjectType::OT_Int: \
+                return model::Int::magic_##method_name; \
+            case model::Object::ObjectType::OT_String: \
+                return model::String::magic_##method_name; \
+            case model::Object::ObjectType::OT_List: \
+                return model::List::magic_##method_name; \
+            case model::Object::ObjectType::OT_Rational: \
+                return model::Rational::magic_##method_name; \
+            case model::Object::ObjectType::OT_Dictionary: \
+                return model::Dictionary::magic_##method_name; \
+            case model::Object::ObjectType::OT_Bool: \
+                return model::Bool::magic_##method_name; \
+            case model::Object::ObjectType::OT_Nil: \
+                return model::Nil::magic_##method_name; \
+            default: \
+                DEBUG_OUTPUT("GET_MAGIC_METHOD: unsupported type for " #method_name " (type: " + obj_ptr->to_string() + ")"); \
+                return nullptr; \
+        } \
+    }())
+
+// 检查魔法方法是否有效（避免空指针/类型错误）
+#define CHECK_MAGIC_METHOD_VALID(magic_ptr, method_name, obj_type_str) \
+    ([&]() -> bool { \
+        if (!magic_ptr) { \
+            DEBUG_OUTPUT("CHECK_MAGIC_METHOD_VALID: " #method_name " is nullptr for type: " + obj_type_str); \
+            return false; \
+        } \
+        if (magic_ptr->get_type() != model::Object::ObjectType::OT_CppFunction) { \
+            DEBUG_OUTPUT("CHECK_MAGIC_METHOD_VALID: " #method_name " is not CppFunction (type: " + magic_ptr->to_string() + ")"); \
+            return false; \
+        } \
+        return true; \
+    }())
 
 namespace kiz {
 
@@ -55,15 +98,6 @@ public:
 
     // 获取实际类型的虚函数
     [[nodiscard]] virtual ObjectType get_type() const = 0;
-
-    // 动态转换模板函数
-    template <typename T>
-    T* dyn_cast() {
-        if (this->get_type() == T::TYPE) {
-            return static_cast<T*>(this);
-        }
-        return nullptr;
-    }
 
     void make_ref() {
         refc_.fetch_add(1, std::memory_order_relaxed);
@@ -175,6 +209,11 @@ class List : public Object {
 public:
     std::vector<Object*> val;
 
+    static Object* magic_add;
+    static Object* magic_mul;
+    static Object* magic_in;
+    static Object* magic_eq;
+
     static constexpr ObjectType TYPE = ObjectType::OT_List;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -200,6 +239,17 @@ class Int : public Object {
 public:
     deps::BigInt val;
 
+    static Object* magic_add;
+    static Object* magic_sub;
+    static Object* magic_mul;
+    static Object* magic_div;
+    static Object* magic_pow;
+    static Object* magic_mod;
+    static Object* magic_bool;
+    static Object* magic_eq;
+    static Object* magic_lt;
+    static Object* magic_gt;
+
     static constexpr ObjectType TYPE = ObjectType::OT_Int;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -214,6 +264,14 @@ class Rational : public Object {
 public:
     deps::Rational val;
 
+    static Object* magic_add;
+    static Object* magic_sub;
+    static Object* magic_mul;
+    static Object* magic_div;
+    static Object* magic_eq;
+    static Object* magic_lt;
+    static Object* magic_gt;
+
     static constexpr ObjectType TYPE = ObjectType::OT_Rational;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -227,6 +285,11 @@ class String : public Object {
 public:
     std::string val;
 
+    static Object* magic_add;
+    static Object* magic_mul;
+    static Object* magic_in;
+    static Object* magic_eq;
+
     static constexpr ObjectType TYPE = ObjectType::OT_String;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -239,6 +302,9 @@ public:
 class Dictionary : public Object {
 public:
     deps::HashMap<Object*> attrs;
+
+    static Object* magic_add;
+    static Object* magic_in;
 
     static constexpr ObjectType TYPE = ObjectType::OT_Dictionary;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
@@ -270,6 +336,8 @@ class Bool : public Object {
 public:
     bool val;
 
+    static Object* magic_eq;
+
     static constexpr ObjectType TYPE = ObjectType::OT_Bool;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -281,6 +349,7 @@ public:
 
 class Nil : public Object {
 public:
+    static Object* magic_eq;
 
     static constexpr ObjectType TYPE = ObjectType::OT_Nil;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
@@ -291,10 +360,9 @@ public:
     }
 };
 
-deps::HashMap<Object*> std_modules;
+inline deps::HashMap<Object*> std_modules;
 
 void registering_magic_methods();
-
 void registering_std_modules();
 
 };

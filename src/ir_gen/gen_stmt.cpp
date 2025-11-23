@@ -1,3 +1,4 @@
+#include "kiz.hpp"
 #include "opcode.hpp"
 #include "../../include/ir_gen.hpp"
 #include "../../include/ast.hpp"

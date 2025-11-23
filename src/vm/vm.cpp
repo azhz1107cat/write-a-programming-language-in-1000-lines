@@ -69,132 +69,97 @@ void Vm::load(model::Module* src_module) {
 }
 
 void Vm::extend_code(const model::CodeObject* code_object) {
-    DEBUG_OUTPUT("exec extend_code...");
+    DEBUG_OUTPUT("exec extend_code (覆盖模式)...");
     DEBUG_OUTPUT("call stack length: " + std::to_string(this->call_stack_.size()));
 
-    // 合法性校验（避免空指针崩溃）
+    // 合法性校验
     assert(code_object != nullptr && "Vm::extend_code: 传入的 code_object 不能为 nullptr");
     assert(!call_stack_.empty() && "Vm::extend_code: 调用栈为空，需先通过 load() 加载模块");
 
-    // 获取全局模块级调用帧（REPL 共享同一个帧，变量持久化）
+    // 获取全局模块级调用帧（REPL 共享同一个帧）
     auto& curr_frame = *call_stack_.back();
-    auto& global_code = *curr_frame.code_object; // 原有全局 CodeObject
-    const size_t prev_instr_count = global_code.code.size(); // 记录原有指令总数
-    const size_t prev_const_count = global_code.consts.size(); // 原有常量总数（关键：用于索引映射）
-    const size_t prev_name_count = global_code.names.size(); // 原有变量名总数
+    auto& global_code_obj = *curr_frame.code_object; // 原有全局 CodeObject
+    const size_t prev_instr_count = global_code_obj.code.size(); // 记录原有指令总数（用于后续执行新指令）
 
-    // 追加指令（原有逻辑不变）
-    for (const auto& instr : code_object->code) {
-        global_code.code.push_back(instr);
+    // ========== 覆盖：常量池 ==========
+    // 清理原有全局常量池
+    for (model::Object* old_const : global_code_obj.consts) {
+        if (old_const != nullptr) {
+            old_const->del_ref();
+        }
     }
-    DEBUG_OUTPUT("extend_code: 追加指令 "
-        + std::to_string(code_object->code.size())
-        + " 条（累计 "
-        + std::to_string(global_code.code.size())
-        +" 条）"
-    );
-
-    // 修复常量追加：去重+索引映射+引用计数
-    size_t actual_const_added = 0; // 实际追加的常量数量（用于日志）
-    // 临时映射：局部常量索引 → 全局常量索引（解决索引不匹配问题）
-    std::vector<size_t> const_index_map(code_object->consts.size(), 0);
-
-    for (size_t local_idx = 0; local_idx < code_object->consts.size(); ++local_idx) {
-        model::Object* new_const = code_object->consts[local_idx];
+    // 清空 VM 同步常量池
+    const auto prev_const_count =this->constant_pool_.size();
+    this->constant_pool_.clear();
+    // 清空全局常量池，用新 code_object 的常量池覆盖（添加引用计数）
+    global_code_obj.consts.clear();
+    for (model::Object* new_const : code_object->consts) {
         if (new_const == nullptr) {
             assert(false && "extend_code: 新常量池中有 nullptr");
-            const_index_map[local_idx] = prev_const_count + actual_const_added;
-            actual_const_added++;
+            global_code_obj.consts.push_back(nullptr);
             continue;
         }
-
-        // 常量去重
-        size_t global_idx = prev_const_count + actual_const_added; // 默认新索引
-        bool is_duplicate = false;
-        for (size_t i = 0; i < global_code.consts.size(); ++i) {
-            model::Object* exist_const = global_code.consts[i];
-            if (exist_const == nullptr) continue;
-            // 精确去重：根据类型+值判断（比 to_string() 更可靠）
-            if (typeid(*exist_const) == typeid(*new_const)) {
-                if (exist_const->to_string() == new_const->to_string()) {
-                    is_duplicate = true;
-                    global_idx = i; // 复用已有常量的全局索引
-                    break;
-                }
-            }
-        }
-
-        // 非重复常量
-        if (!is_duplicate) {
-            new_const->make_ref(); // 全局 CodeObject 持有引用，计数+1
-            global_code.consts.push_back(new_const);
-            this->constant_pool_.push_back(new_const); // VM 常量池同步
-            actual_const_added++;
-        }
-
-        // 记录映射：局部索引 → 全局索引（后续修正指令中的常量索引）
-        const_index_map[local_idx] = global_idx;
+        new_const->make_ref(); // 全局 CodeObject 持有该常量，引用计数+1
+        global_code_obj.consts.push_back(new_const);
+        this->constant_pool_.push_back(new_const); // VM 常量池同步覆盖
     }
-
-    // 修正新指令中的常量索引
-    // 遍历新追加的指令，将 LOAD_CONST 的局部索引替换为全局索引
-    for (size_t i = prev_instr_count; i < global_code.code.size(); ++i) {
-        auto& instr = global_code.code[i];
-        if (instr.opc == Opcode::LOAD_CONST && !instr.opn_list.empty()) {
-            size_t local_const_idx = instr.opn_list[0];
-            // 校验局部索引有效性
-            if (local_const_idx >= const_index_map.size()) {
-                assert(false && "extend_code: LOAD_CONST 局部索引超出范围");
-                continue;
-            }
-            // 替换为全局索引
-            instr.opn_list[0] = const_index_map[local_const_idx];
-            DEBUG_OUTPUT("extend_code: 修正 LOAD_CONST 索引：局部 "
-                + std::to_string(local_const_idx)
-                + " → 全局"
-                + std::to_string(instr.opn_list[0]) );
-        }
-    }
-
-    DEBUG_OUTPUT("extend_code: 追加常量 "
-        + std::to_string(actual_const_added) // 显示实际追加数量
-        + " 个（累计 "
-        + std::to_string(global_code.consts.size())
-        +" 个）"
+    DEBUG_OUTPUT("extend_code: 覆盖常量池：原有 "
+        + std::to_string(prev_const_count)
+        + " 个 → 新 "
+        + std::to_string(global_code_obj.consts.size())
+        + " 个"
     );
 
-    // 追加变量名
-    for (const std::string& new_name : code_object->names) {
-        if (std::find(global_code.names.begin(), global_code.names.end(), new_name) == global_code.names.end()) {
-            global_code.names.push_back(new_name);
-        }
-    }
-    DEBUG_OUTPUT("extend_code: 追加变量名 "
-        + std::to_string(code_object->names.size())
-        + " 个（累计 "
-        + std::to_string(global_code.names.size())
-        +" 个）"
+    // ========== 覆盖：名称表 ==========
+    const size_t prev_name_count = global_code_obj.names.size();
+    global_code_obj.names.clear();
+    global_code_obj.names = code_object->names; // 覆盖 CodeObject 的 names
+    // 同步更新 CallFrame 的 names（关键！之前缺失这一步）
+    curr_frame.names = global_code_obj.names;
+    DEBUG_OUTPUT("extend_code: 覆盖名称表：原有 "
+        + std::to_string(prev_name_count)
+        + " 个 → 新 "
+        + std::to_string(global_code_obj.names.size())
+        + " 个（CallFrame names 同步更新）"
     );
 
-    // 追加行号映射
-    for (const auto& lineno : code_object->lineno_map) {
-        global_code.lineno_map.push_back(lineno);
-    }
+    // ========== 覆盖：行号映射 ==========
+    global_code_obj.lineno_map.clear();
+    global_code_obj.lineno_map = code_object->lineno_map; // 覆盖 CodeObject 的 lineno_map
+    // 同步更新 CallFrame 的 curr_lineno_map（关键！避免行号映射错误）
+    curr_frame.curr_lineno_map = global_code_obj.lineno_map;
+    DEBUG_OUTPUT("extend_code: 覆盖行号映射：新 "
+        + std::to_string(global_code_obj.lineno_map.size())
+        + " 条（CallFrame lineno_map 同步更新）"
+    );
 
-    // 执行新追加的指令
-    curr_frame.pc = prev_instr_count;
-    while (curr_frame.pc < global_code.code.size()) {
-        const Instruction& curr_inst = global_code.code[curr_frame.pc];
+    // ========== 追加指令 ==========
+    const size_t new_instr_count = code_object->code.size();
+    for (const auto& instr : code_object->code) {
+        global_code_obj.code.push_back(instr);
+    }
+    DEBUG_OUTPUT("extend_code: 追加指令 "
+        + std::to_string(new_instr_count)
+        + " 条（累计 "
+        + std::to_string(global_code_obj.code.size())
+        + " 条）"
+    );
+
+    // ========== 执行新追加的指令 ==========
+    curr_frame.pc = prev_instr_count; // 从原有指令末尾开始执行新指令
+    while (curr_frame.pc < global_code_obj.code.size()) {
+        const Instruction& curr_inst = global_code_obj.code[curr_frame.pc];
         this->exec(curr_inst);
         curr_frame.pc++;
     }
     DEBUG_OUTPUT("extend_code: 执行新指令完成（PC 从 "
         + std::to_string(prev_instr_count)
-        +" 到 "
-        + std::to_string(curr_frame.pc) +"）"
+        + " 到 "
+        + std::to_string(curr_frame.pc)
+        + "）"
     );
 
-    // 清理临时资源：释放临时 code_object 对常量的引用
+    // ========== 清理临时资源：释放新 code_object 对常量的引用 ==========
     for (model::Object* new_const : code_object->consts) {
         if (new_const != nullptr) {
             new_const->del_ref();

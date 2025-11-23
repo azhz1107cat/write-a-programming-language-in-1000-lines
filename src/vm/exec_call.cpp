@@ -7,17 +7,29 @@ namespace kiz {
 
 void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::Object* self=nullptr){
     auto* args_list = dynamic_cast<model::List*>(args_obj);
+
+    assert(func_obj != nullptr);
+    assert(args_obj != nullptr);
+
     if (!args_list) {
         func_obj->del_ref();  // 释放函数对象引用
         assert(false && "CALL: 栈顶-1元素非List类型（参数必须封装为列表）");
     }
+    DEBUG_OUTPUT("start to call function");
 
     // 分类型处理函数调用（Function / CppFunction）
-    if (const auto* cpp_func = dynamic_cast<model::CppFunction*>(func_obj); cpp_func) {
+    if (const auto* cpp_func = dynamic_cast<model::CppFunction*>(func_obj)) {
         // -------------------------- 处理 CppFunction 调用 --------------------------
-        DEBUG_OUTPUT("call CppFunction...");
+        DEBUG_OUTPUT("start to call CppFunction");
+        DEBUG_OUTPUT("call CppFunction from "
+            + cpp_func->to_string()
+            + " with "+args_obj->to_string()
+            + " with self " + (self ? self->to_string() : "nullptr")
+            );
 
         model::Object* return_val = cpp_func->func(self, args_list);
+
+        DEBUG_OUTPUT("success to get the result of CppFunction");
 
         // 管理返回值引用计数：返回值压栈前必须 make_ref
         if (return_val != nullptr) {
@@ -36,7 +48,7 @@ void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::
         args_obj->del_ref();
         DEBUG_OUTPUT("ok to call CppFunction...");
         DEBUG_OUTPUT("CppFunction return: " + return_val->to_string());
-    } else if (const auto* func = dynamic_cast<model::Function*>(func_obj); func) {
+    } else if (const auto* func = dynamic_cast<model::Function*>(func_obj)) {
         // -------------------------- 处理 Function 调用 --------------------------
         DEBUG_OUTPUT("call Function: " + func->name);
 

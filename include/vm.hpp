@@ -54,7 +54,7 @@ public:
         #define KIZ_FUNC(n) builtins.insert(#n, new model::CppFunction(builtin_objects::n))
         KIZ_FUNC(print);
         KIZ_FUNC(input);
-        KIZ_FUNC(isintance);
+        KIZ_FUNC(isinstance);
         #undef KIZ_FUNC
 
         DEBUG_OUTPUT("registering magic methods...");
@@ -66,7 +66,7 @@ public:
     VmState get_vm_state();
     void exec(const Instruction& instruction);
     std::tuple<model::Object*, model::Object*> fetch_two_from_stack_top(const std::string& curr_instruction_name);
-    static bool check_has_magic(model::Object* a, const std::string& magic_method_name);
+    static bool check_has_magic(const model::Object* a, const std::string& magic_method_name);
     void exec_ADD(const Instruction& instruction);
     void exec_SUB(const Instruction& instruction);
     void exec_MUL(const Instruction& instruction);

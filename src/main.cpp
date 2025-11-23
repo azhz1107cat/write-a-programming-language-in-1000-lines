@@ -17,6 +17,7 @@
 #include <iostream>
 
 #include "kiz.hpp"
+#include "util/src_manager.hpp"
 /* 提供命令行帮助信息函数 */
 void show_help(const char* prog_name);
 
@@ -102,15 +103,15 @@ void args_parser(const int argc, char* argv[]) {
             show_help();
         } else {
             std::string path = argv[2];
-            const auto content = util::open_new_kiz_file(path);
+            const auto content = util::open_new_file(path);
             kiz::Lexer lexer(path);
             kiz::Parser parser(path);
-            kiz::IrGenerator ir_gen(path);
+            kiz::IRGenerator ir_gen(path);
             kiz::Vm vm(path);
             
-            const auto tokens = lexer.tokenize(content);
-            const auto ast = parser.parse(tokens);
-            const auto ir = ir_gen.gen(ast);
+            const auto tokens = lexer.tokenize(cmd);
+            auto ast = parser.parse(tokens);
+            const auto ir = ir_gen.gen(std::move(ast));
             vm.load(ir);
         }
         return;
@@ -121,15 +122,15 @@ void args_parser(const int argc, char* argv[]) {
         const std::string cmd = argv[1];
         if (cmd == "run") {
             std::string path = argv[2];
-            const auto content = util::open_new_kiz_file(path);
+            const auto content = util::open_new_file(path);
             kiz::Lexer lexer(path);
             kiz::Parser parser(path);
-            kiz::IrGenerator ir_gen(path);
+            kiz::IRGenerator ir_gen(path);
             kiz::Vm vm(path);
             
             const auto tokens = lexer.tokenize(content);
-            const auto ast = parser.parse(tokens);
-            const auto ir = ir_gen.gen(ast);
+            auto ast = parser.parse(tokens);
+            const auto ir = ir_gen.gen(std::move(ast));
             vm.load(ir);
         } else {
             // 无效命令

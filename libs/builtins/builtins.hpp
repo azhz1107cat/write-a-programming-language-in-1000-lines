@@ -1,4 +1,6 @@
 #pragma once
+#include <unordered_set>
+
 #include "models.hpp"
 
 inline model::Object* get_one_arg(const model::List* args) {
@@ -15,11 +17,11 @@ inline model::Object* check_based_object_inner(
 ) {
     if (src_obj == nullptr) return nullptr;
     // 闭环检测
-    if (visited.count(src_obj)) return new model::Bool(false);
+    if (visited.contains(src_obj)) return new model::Bool(false);
     visited.insert(src_obj);
 
     // 查找__parent__属性
-    auto it = src_obj->attrs.find("__parent__");
+    const auto it = src_obj->attrs.find("__parent__");
     if (it == nullptr) {
         return new model::Bool(false);
     }
@@ -29,7 +31,7 @@ inline model::Object* check_based_object_inner(
 }
 
 // 对外接口
-model::Object* check_based_object(model::Object* src_obj, model::Object* for_check_obj) {
+inline model::Object* check_based_object(model::Object* src_obj, model::Object* for_check_obj) {
     std::unordered_set<model::Object*> visited; // 每次调用新建集合
     return check_based_object_inner(src_obj, for_check_obj, visited);
 }
@@ -54,12 +56,12 @@ inline auto input = [](model::Object* self, const model::List* args) -> model::O
 };
 
 inline auto isinstance = [](model::Object* self, const model::List* args) -> model::Object* {
-    if (!args.size() == 2) {
+    if (!args->val.size() == 2) {
         assert(false && "函数参数不足两个");
     }
 
-    const auto a = args[0];
-    const auto b = args[1];
+    const auto a = args->val[0];
+    const auto b = args->val[1];
     return check_based_object(a, b);
     
 };
