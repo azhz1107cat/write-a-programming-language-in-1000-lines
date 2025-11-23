@@ -24,10 +24,11 @@ True Nil False
     - **debug&fix** 测试注释
     - **debug&fix** 测试parser并在代码中为nullptr兜底
     - **debug&fix** 测试set nonlocal和set global
-    - **feature** 所有报错使用util::err_reporter函数代替现在临时的assert
+    - **feature** 所有报错使用现成的util::err_reporter函数代替现在临时的assert
     - **feature** 添加RuntimeError的TraceBack
     - **feature(maybe has break change)** Object->to_string改为Object的魔术方法(magic_str)
     - **feature** 添加import, 循环导入检查, std模块系统(在model::std_modules中注册)和用户模块系统
     - **feature** 完善builtins object的magic_bool, magic_str魔术方法, 同时支持用户定义的魔术方法
+    - **feature** 完善builtins functions 包括typeof(obj)->str, now()->rational, dec(rational)->str, range(start, end, sep)->list
     - **feature** 完成 and not or in运算符(在vm中要支持判断model::Bool, 如果对象不是model::Bool, 需尝试Object::magic_bool魔术方法)
     - **feature** 完成try-catch throw语句
