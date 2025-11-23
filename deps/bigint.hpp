@@ -8,7 +8,7 @@
  */
 
 #pragma once
-#include <algorithm> // 鐢ㄤ簬 max/min 鍑芥暟
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <ostream>
