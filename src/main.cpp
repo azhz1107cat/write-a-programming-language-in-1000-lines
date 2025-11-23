@@ -102,14 +102,16 @@ void args_parser(const int argc, char* argv[]) {
             // 显示帮助信息
             show_help();
         } else {
-            std::string path = argv[2];
+            std::string path = argv[1];
+            DEBUG_OUTPUT("reading file at "+path);
             const auto content = util::open_new_file(path);
+            DEBUG_OUTPUT("file content is "+content);
             kiz::Lexer lexer(path);
             kiz::Parser parser(path);
             kiz::IRGenerator ir_gen(path);
             kiz::Vm vm(path);
-            
-            const auto tokens = lexer.tokenize(cmd);
+
+            const auto tokens = lexer.tokenize(content);
             auto ast = parser.parse(tokens);
             const auto ir = ir_gen.gen(std::move(ast));
             vm.load(ir);
@@ -122,7 +124,9 @@ void args_parser(const int argc, char* argv[]) {
         const std::string cmd = argv[1];
         if (cmd == "run") {
             std::string path = argv[2];
+            DEBUG_OUTPUT("reading file at "+path);
             const auto content = util::open_new_file(path);
+            DEBUG_OUTPUT("file content is "+content);
             kiz::Lexer lexer(path);
             kiz::Parser parser(path);
             kiz::IRGenerator ir_gen(path);

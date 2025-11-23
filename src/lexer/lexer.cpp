@@ -14,6 +14,8 @@
 #include <map>
 #include <stdexcept>
 
+#include "util/error_reporter.hpp"
+
 namespace kiz {
 
 static std::map<std::string, TokenType> keywords;
@@ -40,94 +42,95 @@ void register_keywords() {
 
 std::vector<Token> Lexer::tokenize(const std::string& src) {
     std::vector<Token> tokens;
-    size_t i = 0;
-    int line = 1, col = 1;
+    size_t pos = 0;
+    size_t lineno = 1;
+    size_t col = 1;
     register_keywords();
     DEBUG_OUTPUT("tokenize the src txt...");
-    while (i < src.size()) {
-        if (src[i] == '\n') {
+    while (pos < src.size()) {
+        if (src[pos] == '\n') {
             if ( !tokens.empty() ) {
                 if (tokens.back().type == TokenType::Backslash) {
                     tokens.pop_back();
                 }
-                tokens.emplace_back(TokenType::EndOfLine, "\n", line, col);
+                tokens.emplace_back(TokenType::EndOfLine, "\n", lineno, col);
             }
-            ++line;
+            ++lineno;
             col = 1;
-            ++i;
+            ++pos;
             continue;
         }
-        if (isspace(src[i])) {
+        if (isspace(src[pos])) {
             ++col;
-            ++i;
+            ++pos;
             continue;
         }
         size_t start_col = col;
 
-        if (isalpha(src[i]) || src[i] == '_') {
-            size_t j = i + 1;
+        if (isalpha(src[pos]) || src[pos] == '_') {
+            size_t j = pos + 1;
             while (j < src.size() && (isalnum(src[j]) || src[j] == '_')) ++j;
-            std::string ident = src.substr(i, j - i);
+            std::string ident = src.substr(pos, j - pos);
             auto type = TokenType::Identifier;
             if (keywords.contains(ident)) type = keywords[ident];
-            tokens.emplace_back(type, ident, line, start_col);
-            col += (j - i);
-            i = j;
-        } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '>') {
-            tokens.emplace_back(TokenType::FatArrow, "=>", line, start_col);
-            i += 2;
+            tokens.emplace_back(type, ident, lineno, start_col);
+            col += (j - pos);
+            pos = j;
+        } else if (src[pos] == '=' && pos + 1 < src.size() && src[pos + 1] == '>') {
+            tokens.emplace_back(TokenType::FatArrow, "=>", lineno, start_col);
+            pos += 2;
             col += 2;
         }
-        else if (src[i] == '-' && i + 1 < src.size() && src[i + 1] == '>') {
-            tokens.emplace_back(TokenType::ThinArrow, "->", line, start_col);
-            i += 2;
+        else if (src[pos] == '-' && pos + 1 < src.size() && src[pos + 1] == '>') {
+            tokens.emplace_back(TokenType::ThinArrow, "->", lineno, start_col);
+            pos += 2;
             col += 2;
-        } else if (src[i] == '=' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::Equal, "==", line, start_col);
-            i += 2;
+        } else if (src[pos] == '=' && pos + 1 < src.size() && src[pos + 1] == '=') {
+            tokens.emplace_back(TokenType::Equal, "==", lineno, start_col);
+            pos += 2;
             col += 2;
-        } else if (src[i] == '!' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::NotEqual, "!=", line, start_col);
-            i += 2;
+        } else if (src[pos] == '!' && pos + 1 < src.size() && src[pos + 1] == '=') {
+            tokens.emplace_back(TokenType::NotEqual, "!=", lineno, start_col);
+            pos += 2;
             col += 2;
-        } else if (src[i] == '!') {
-            tokens.emplace_back(TokenType::ExclamationMark, "!", line, start_col);
-            ++i;
+        } else if (src[pos] == '!') {
+            tokens.emplace_back(TokenType::ExclamationMark, "!", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '<' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::LessEqual, "<=", line, start_col);
-            i += 2;
+        } else if (src[pos] == '<' && pos + 1 < src.size() && src[pos + 1] == '=') {
+            tokens.emplace_back(TokenType::LessEqual, "<=", lineno, start_col);
+            pos += 2;
             col += 2;
-        } else if (src[i] == '>' && i + 1 < src.size() && src[i + 1] == '=') {
-            tokens.emplace_back(TokenType::GreaterEqual, ">=", line, start_col);
-            i += 2;
+        } else if (src[pos] == '>' && pos + 1 < src.size() && src[pos + 1] == '=') {
+            tokens.emplace_back(TokenType::GreaterEqual, ">=", lineno, start_col);
+            pos += 2;
             col += 2;
-        } else if (src[i] == '<') {
-            tokens.emplace_back(TokenType::Less, "<", line, start_col);
-            ++i;
+        } else if (src[pos] == '<') {
+            tokens.emplace_back(TokenType::Less, "<", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '>') {
-            tokens.emplace_back(TokenType::Greater, ">", line, start_col);
-            ++i;
+        } else if (src[pos] == '>') {
+            tokens.emplace_back(TokenType::Greater, ">", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == ':') {
-            ++i;
+        } else if (src[pos] == ':') {
+            ++pos;
             ++col;
-            if (src[i] == ':') {
-                ++i;
+            if (src[pos] == ':') {
+                ++pos;
                 ++col;
-                tokens.emplace_back(TokenType::DoubleColon, "::", line, start_col);
+                tokens.emplace_back(TokenType::DoubleColon, "::", lineno, start_col);
             }
-        } else if (src[i] == '=') {
-            tokens.emplace_back(TokenType::Assign, "=", line, start_col);
-            ++i;
+        } else if (src[pos] == '=') {
+            tokens.emplace_back(TokenType::Assign, "=", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '>') {
-            tokens.emplace_back(TokenType::Greater, ">", line, start_col);
-            ++i;
+        } else if (src[pos] == '>') {
+            tokens.emplace_back(TokenType::Greater, ">", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (isdigit(src[i]) || (src[i] == '.' && i + 1 < src.size() && isdigit(src[i + 1]))) {
-            size_t j = i;
+        } else if (isdigit(src[pos]) || (src[pos] == '.' && pos + 1 < src.size() && isdigit(src[pos + 1]))) {
+            size_t j = pos;
             bool has_dot = false;
             bool has_underscore;
 
@@ -142,7 +145,7 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
                     has_dot = true;
                     has_underscore = false; // 重置下划线标志
                     ++j;
-                } else if (src[j] == '_' && !has_underscore && j > i && j + 1 < src.size() && isdigit(src[j + 1])) {
+                } else if (src[j] == '_' && !has_underscore && j > pos && j + 1 < src.size() && isdigit(src[j + 1])) {
                     has_underscore = true;
                     ++j;
                 } else {
@@ -181,27 +184,27 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             }
 
             // 提取数字字符串并移除所有下划线
-            std::string num_str = src.substr(i, j - i);
+            std::string num_str = src.substr(pos, j - pos);
             num_str.erase(std::remove(num_str.begin(), num_str.end(), '_'), num_str.end());
 
-            tokens.emplace_back(TokenType::Number, num_str, line, start_col);
-            col += (j - i);
-            i = j;
-        } else if (src[i] == '(') {
-            tokens.emplace_back(TokenType::LParen, "(", line, start_col);
-            ++i;
+            tokens.emplace_back(TokenType::Number, num_str, lineno, start_col);
+            col += (j - pos);
+            pos = j;
+        } else if (src[pos] == '(') {
+            tokens.emplace_back(TokenType::LParen, "(", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == ')') {
-            tokens.emplace_back(TokenType::RParen, ")", line, start_col);
-            ++i;
+        } else if (src[pos] == ')') {
+            tokens.emplace_back(TokenType::RParen, ")", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == ';') {
-            tokens.emplace_back(TokenType::Semicolon, ";", line, start_col);
-            ++i;
+        } else if (src[pos] == ';') {
+            tokens.emplace_back(TokenType::Semicolon, ";", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '"' || src[i] == '\'') {
-            char quote_type = src[i];
-            size_t j = i + 1;
+        } else if (src[pos] == '"' || src[pos] == '\'') {
+            char quote_type = src[pos];
+            size_t j = pos + 1;
             std::string str_content;
 
             while (j < src.size() && src[j] != quote_type) {
@@ -240,117 +243,123 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
             }
 
             if (j >= src.size()) {// Unterminated string
-                assert("Error: Unterminated string literal at line " + line);
-                i = src.size();// Stop tokenizing
+                assert("Error: Unterminated string literal at line " + lineno);
+                pos = src.size();// Stop tokenizing
             } else {
-                tokens.emplace_back(TokenType::String, str_content, line, start_col);
-                col += (j - i + 1);
-                i = j + 1;
+                tokens.emplace_back(TokenType::String, str_content, lineno, start_col);
+                col += (j - pos + 1);
+                pos = j + 1;
             }
-        } else if (src[i] == '+') {
-            tokens.emplace_back(TokenType::Plus, "+", line, start_col);
-            ++i;
+        } else if (src[pos] == '+') {
+            tokens.emplace_back(TokenType::Plus, "+", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '-') {
-            tokens.emplace_back(TokenType::Minus, "-", line, start_col);
-            ++i;
+        } else if (src[pos] == '-') {
+            tokens.emplace_back(TokenType::Minus, "-", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '*') {
-            tokens.emplace_back(TokenType::Star, "*", line, start_col);
-            ++i;
+        } else if (src[pos] == '*') {
+            tokens.emplace_back(TokenType::Star, "*", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '\\') {
-            tokens.emplace_back(TokenType::Backslash, "\\", line, start_col);
-            ++i;
+        } else if (src[pos] == '\\') {
+            tokens.emplace_back(TokenType::Backslash, "\\", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '/' && i + 1 < src.size() && src[i + 1] == '/') {
+        } else if (src[pos] == '/' && pos + 1 < src.size() && src[pos + 1] == '/') {
             // Single line comment with //
-            size_t j = i + 2;
+            size_t j = pos + 2;
             while (j < src.size() && src[j] != '\n') ++j;
-            i = j;
+            pos = j;
             continue;
-        } else if (src[i] == '/' && i + 1 < src.size() && src[i + 1] == '*') {
+        } else if (src[pos] == '/' && pos + 1 < src.size() && src[pos + 1] == '*') {
             // Block comment with /* */
-            size_t j = i + 2;
+            size_t j = pos + 2;
             while (j + 1 < src.size()) {
                 if (src[j] == '*' && src[j + 1] == '/') {
                     j += 2;
                     break;
                 }
                 if (src[j] == '\n') {
-                    line++;
+                    lineno++;
                     col = 1;
                 } else {
                     col++;
                 }
                 j++;
             }
-            i = j;
+            pos = j;
             continue;
-        } else if (src[i] == '/') {
-            tokens.emplace_back(TokenType::Slash, "/", line, start_col);
-            ++i;
+        } else if (src[pos] == '/') {
+            tokens.emplace_back(TokenType::Slash, "/", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '%') {
-            tokens.emplace_back(TokenType::Percent, "%", line, start_col);
-            ++i;
+        } else if (src[pos] == '%') {
+            tokens.emplace_back(TokenType::Percent, "%", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '^') {
-            tokens.emplace_back(TokenType::Caret, "^", line, start_col);
-            ++i;
+        } else if (src[pos] == '^') {
+            tokens.emplace_back(TokenType::Caret, "^", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '!') {
-            tokens.emplace_back(TokenType::Bang, "!", line, start_col);
-            ++i;
+        } else if (src[pos] == '!') {
+            tokens.emplace_back(TokenType::Bang, "!", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '{') {
-            tokens.emplace_back(TokenType::LBrace, "{", line, start_col);
-            ++i;
+        } else if (src[pos] == '{') {
+            tokens.emplace_back(TokenType::LBrace, "{", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '}') {
+        } else if (src[pos] == '}') {
             if (
                 tokens.back().type != TokenType::Semicolon
                 and tokens.back().type != TokenType::Comma
             ) {
-                tokens.emplace_back(TokenType::Semicolon, ";", line, start_col);
+                tokens.emplace_back(TokenType::Semicolon, ";", lineno, start_col);
             }
-            tokens.emplace_back(TokenType::RBrace, "}", line, start_col);
-            ++i;
+            tokens.emplace_back(TokenType::RBrace, "}", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '[') {
-            tokens.emplace_back(TokenType::LBracket, "[", line, start_col);
-            ++i;
+        } else if (src[pos] == '[') {
+            tokens.emplace_back(TokenType::LBracket, "[", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == ']') {
-            tokens.emplace_back(TokenType::RBracket, "]", line, start_col);
-            ++i;
+        } else if (src[pos] == ']') {
+            tokens.emplace_back(TokenType::RBracket, "]", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '|') {
-            tokens.emplace_back(TokenType::Pipe, "|", line, start_col);
-            ++i;
+        } else if (src[pos] == '|') {
+            tokens.emplace_back(TokenType::Pipe, "|", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == ',') {
-            tokens.emplace_back(TokenType::Comma, ",", line, start_col);
-            ++i;
+        } else if (src[pos] == ',') {
+            tokens.emplace_back(TokenType::Comma, ",", lineno, start_col);
+            ++pos;
             ++col;
-        } else if (src[i] == '.') {
-            ++i;
+        } else if (src[pos] == '.') {
+            ++pos;
             ++col;
-            if (src[i] == '.') {
-                ++i;
+            if (src[pos] == '.') {
+                ++pos;
                 ++col;
-                ++i;
+                ++pos;
                 ++col;
-                tokens.emplace_back(TokenType::TripleDot, "...", line, start_col);
+                tokens.emplace_back(TokenType::TripleDot, "...", lineno, start_col);
             }
             else {
-                tokens.emplace_back(TokenType::Dot, ".", line, start_col);
+                tokens.emplace_back(TokenType::Dot, ".", lineno, start_col);
             }
         } else {
-            assert(("Unknown token '"+std::string(1, src[i]) + "'").data());
+            util::ErrorInfo err = {
+                "SyntaxError",
+                "Unknown token '"+std::string(1, src[pos]) + "'",
+                1
+            };
+            util::error_reporter(file_path, lineno, lineno,
+                start_col, start_col, err);
         }
     }
-    tokens.emplace_back(TokenType::EndOfFile, "", line, col);
+    tokens.emplace_back(TokenType::EndOfFile, "", lineno, col);
     return tokens;
 }
 
