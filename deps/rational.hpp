@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <utility>
 
 namespace deps {
 
@@ -23,17 +24,17 @@ public:
     // 默认构造：0/1
     Rational() : numerator(0), denominator(1) {}
     // 整数构造（分母默认为1）
-    explicit Rational(const BigInt& numerator) 
-        : numerator(numerator), denominator(1) {}
+    explicit Rational(BigInt  numerator)
+        : numerator(std::move(numerator)), denominator(1) {}
     // 分子+分母构造（核心构造，自动处理符号和约分）
-    Rational(const BigInt& numerator, const BigInt& denominator) 
-        : numerator(numerator), denominator(denominator) {
+    Rational(BigInt  numerator, BigInt  denominator)
+        : numerator(std::move(numerator)), denominator(std::move(denominator)) {
         reduce(); // 构造时立即约分并规范符号
     }
 
     // 访问接口（只读，防止外部修改分子分母）
-    const BigInt& getNumerator() const { return numerator; }
-    const BigInt& getDenominator() const { return denominator; }
+    [[nodiscard]] const BigInt& getNumerator() const { return numerator; }
+    [[nodiscard]] const BigInt& getDenominator() const { return denominator; }
 
     // 核心运算符重载（基于 BigInt 已重载的 +-*%）
     // 赋值运算符
@@ -88,6 +89,25 @@ public:
 
     bool operator!=(const Rational& rhs) const {
         return !(*this == rhs);
+    }
+
+    // 小于运算符：a/b < c/d → a*d < c*b（分母b、d均为正，不等号方向不变）
+    bool operator<(const Rational& rhs) const {
+        // 交叉相乘比较
+        return numerator * rhs.denominator < rhs.numerator * denominator;
+    }
+
+    // 大于运算符：a/b > c/d → a*d > c*b
+    bool operator>(const Rational& rhs) const {
+        return numerator * rhs.denominator > rhs.numerator * denominator;
+    }
+
+    bool operator<=(const Rational& rhs) const {
+        return !(*this > rhs); // 等价于 (*this < rhs) || (*this == rhs)
+    }
+
+    bool operator>=(const Rational& rhs) const {
+        return !(*this < rhs); // 等价于 (*this > rhs) || (*this == rhs)
     }
 
 private:

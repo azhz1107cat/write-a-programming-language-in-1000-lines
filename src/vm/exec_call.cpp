@@ -21,10 +21,10 @@ void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::
     if (const auto* cpp_func = dynamic_cast<model::CppFunction*>(func_obj)) {
         // -------------------------- 处理 CppFunction 调用 --------------------------
         DEBUG_OUTPUT("start to call CppFunction");
-        DEBUG_OUTPUT("call CppFunction from "
+        DEBUG_OUTPUT("call CppFunction"
             + cpp_func->to_string()
-            + " with "+args_obj->to_string()
-            + " with self " + (self ? self->to_string() : "nullptr")
+            + "(self=" + (self ? self->to_string() : "nullptr")
+            + ", "+ args_obj->to_string() + ")"
             );
 
         model::Object* return_val = cpp_func->func(self, args_list);

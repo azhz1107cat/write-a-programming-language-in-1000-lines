@@ -58,13 +58,10 @@ void Vm::exec_ADD(const Instruction& instruction) {
     call_function(GET_MAGIC_METHOD(a, add), new model::List({b}), a);
     DEBUG_OUTPUT("success to call function");
 
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_SUB(const Instruction& instruction) {
@@ -75,13 +72,10 @@ void Vm::exec_SUB(const Instruction& instruction) {
     check_has_magic(a, "sub");
 
     call_function(GET_MAGIC_METHOD(a, sub), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_MUL(const Instruction& instruction) {
@@ -92,13 +86,10 @@ void Vm::exec_MUL(const Instruction& instruction) {
     check_has_magic(a, "mul");
 
     call_function(GET_MAGIC_METHOD(a, mul), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_DIV(const Instruction& instruction) {
@@ -109,13 +100,10 @@ void Vm::exec_DIV(const Instruction& instruction) {
     check_has_magic(a, "div");
 
     call_function(GET_MAGIC_METHOD(a, div), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_MOD(const Instruction& instruction) {
@@ -126,13 +114,10 @@ void Vm::exec_MOD(const Instruction& instruction) {
     check_has_magic(a, "add");
 
     call_function(GET_MAGIC_METHOD(a, mod), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_POW(const Instruction& instruction) {
@@ -143,13 +128,10 @@ void Vm::exec_POW(const Instruction& instruction) {
     check_has_magic(a, "pow");
 
     call_function(GET_MAGIC_METHOD(a, pow), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_NEG(const Instruction& instruction) {
@@ -178,13 +160,10 @@ void Vm::exec_EQ(const Instruction& instruction) {
     check_has_magic(a, "eq");
 
     call_function(GET_MAGIC_METHOD(a, eq), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_GT(const Instruction& instruction) {
@@ -195,13 +174,10 @@ void Vm::exec_GT(const Instruction& instruction) {
     check_has_magic(a, "gt");
 
     call_function(GET_MAGIC_METHOD(a, gt), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 void Vm::exec_LT(const Instruction& instruction) {
@@ -212,13 +188,10 @@ void Vm::exec_LT(const Instruction& instruction) {
     check_has_magic(a, "lt");
 
     call_function(GET_MAGIC_METHOD(a, lt), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 // -------------------------- 逻辑指令 --------------------------
@@ -246,8 +219,6 @@ void Vm::exec_IS(const Instruction& instruction) {
 
     bool is_same = (a == b);
     auto* result = new model::Bool(is_same);
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 // -------------------------- 容器指令 --------------------------
@@ -258,14 +229,11 @@ void Vm::exec_IN(const Instruction& instruction) {
     check_has_magic(a, "in");
 
     call_function(GET_MAGIC_METHOD(a, in), new model::List({b}), a);
-    model::Object* result = op_stack_.top();
 
 
     if (raw_call_stack_count != call_stack_.size()) {
         exec_RET({});
     }
-    result->make_ref();
-    op_stack_.push(result);
 }
 
 }

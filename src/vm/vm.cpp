@@ -61,6 +61,9 @@ void Vm::load(model::Module* src_module) {
         const Instruction& curr_inst = frame_instructions[curr_frame.pc];
         // 调用已实现的exec执行单条指令
         this->exec(curr_inst);
+        DEBUG_OUTPUT("current stack top : " +
+            (op_stack_.empty() ? " " : op_stack_.top()->to_string())
+        );
         // 指令执行完成后，更新当前调用帧的pc（指向下一条指令）
         if (not (
            curr_inst.opc == Opcode::JUMP or
