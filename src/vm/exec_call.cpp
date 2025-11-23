@@ -67,7 +67,7 @@ void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::
         new_frame->name = func->name;
         new_frame->code_object = func->code;
         new_frame->pc = 0;
-        new_frame->return_to_pc = pc_;
+        new_frame->return_to_pc = call_stack_.back()->pc;
         new_frame->names = func->code->names;
         new_frame->is_week_scope = false;
 
@@ -96,7 +96,6 @@ void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::
 
         // 压入新调用帧，更新程序计数器
         call_stack_.emplace_back(std::move(new_frame));
-        pc_ = 0;
 
         // 释放临时引用
         func_obj->del_ref();
@@ -152,7 +151,7 @@ void Vm::exec_RET(const Instruction& instruction) {
         return_val->make_ref();
     }
 
-    pc_ = curr_frame->return_to_pc;
+    caller_frame->pc = curr_frame->return_to_pc;
     op_stack_.push(return_val);
 }
 }

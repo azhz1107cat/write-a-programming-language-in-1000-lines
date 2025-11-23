@@ -12,7 +12,6 @@ void Vm::exec_LOAD_VAR(const Instruction& instruction) {
     }
     const CallFrame* curr_frame = call_stack_.back().get();
     size_t name_idx = instruction.opn_list[0];
-    DEBUG_OUTPUT("current name len is "+std::to_string(curr_frame->name.size()));
     DEBUG_OUTPUT("current name list len is "+std::to_string(curr_frame->names.size()));
 
     if (name_idx >= curr_frame->names.size()) {

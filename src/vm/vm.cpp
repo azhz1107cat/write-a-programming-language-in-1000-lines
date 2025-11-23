@@ -49,7 +49,6 @@ void Vm::load(model::Module* src_module) {
     this->call_stack_.emplace_back(std::move(module_call_frame));
 
     // 初始化VM执行状态：标记为"就绪"
-    this->pc_ = 0;         // 全局PC同步为调用帧初始PC
     this->running_ = true; // 标记VM为运行状态（等待exec触发执行）
     assert(!this->call_stack_.empty() && "Vm::load: 调用栈为空，无法执行指令");
     auto& curr_frame = *this->call_stack_.back(); // 获取当前模块的调用帧（栈顶）
@@ -63,7 +62,13 @@ void Vm::load(model::Module* src_module) {
         // 调用已实现的exec执行单条指令
         this->exec(curr_inst);
         // 指令执行完成后，更新当前调用帧的pc（指向下一条指令）
-        curr_frame.pc++;
+        if (not (
+           curr_inst.opc == Opcode::JUMP or
+           curr_inst.opc == Opcode::JUMP_IF_FALSE or
+           curr_inst.opc == Opcode::RET
+        )){
+            curr_frame.pc++;
+        }
     }
     DEBUG_OUTPUT("call stack length: " + std::to_string(this->call_stack_.size()));
 }
@@ -214,6 +219,7 @@ void Vm::exec(const Instruction& instruction) {
         case Opcode::POP_TOP:         exec_POP_TOP(instruction);       break;
         case Opcode::SWAP:            exec_SWAP(instruction);          break;
         case Opcode::COPY_TOP:        exec_COPY_TOP(instruction);      break;
+        case Opcode::STOP: exec_STOP(instruction);           break;
         default:                      assert(false && "exec: 未知 opcode");
     }
 }

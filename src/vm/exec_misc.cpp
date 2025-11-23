@@ -54,17 +54,19 @@ void Vm::exec_JUMP(const Instruction& instruction) {
         assert(false && "JUMP: 无目标pc索引");
     }
     size_t target_pc = instruction.opn_list[0];
-    if (target_pc >= code_list_.size()) {
+    if (target_pc > code_list_.size()) {
         assert(false && "JUMP: 目标pc超出字节码范围");
     }
-    pc_ = target_pc;
+    call_stack_.back()->pc = target_pc;
 }
 
 void Vm::exec_JUMP_IF_FALSE(const Instruction& instruction) {
     DEBUG_OUTPUT("exec jump_if_false...");
-    if (op_stack_.empty() || instruction.opn_list.empty()) {
-        assert(false && "JUMP_IF_FALSE: 栈空/无目标pc");
-    }
+    // 检查
+    if (op_stack_.empty()) assert(false && "JUMP_IF_FALSE: 操作数栈空");
+    if (instruction.opn_list.empty()) assert(false && "JUMP_IF_FALSE: 无目标pc");
+
+    // 取出条件值
     model::Object* cond = op_stack_.top();
     op_stack_.pop();
     size_t target_pc = instruction.opn_list[0];
@@ -74,22 +76,34 @@ void Vm::exec_JUMP_IF_FALSE(const Instruction& instruction) {
         need_jump = true;
     } else if (const auto* cond_bool = dynamic_cast<model::Bool*>(cond); cond_bool) {
         need_jump = !cond_bool->val;
+        DEBUG_OUTPUT("JUMP_IF_FALSE: 条件值为 " + std::string(cond_bool->val ? "True" : "False") +
+                     ", 是否跳转: " + std::string(need_jump ? "是" : "否"));
     } else {
+        cond->del_ref(); // 避免内存泄漏
         assert(false && "JUMP_IF_FALSE: 条件必须是Nil或Bool");
     }
 
     if (need_jump) {
-        if (target_pc >= code_list_.size()) {
+        // 跳转逻辑
+        if (target_pc > code_list_.size()) {
+            cond->del_ref();
             assert(false && "JUMP_IF_FALSE: 目标pc超出范围");
         }
-        pc_ = target_pc;
+        DEBUG_OUTPUT("JUMP_IF_FALSE: 跳转至 PC=" + std::to_string(target_pc));
+        call_stack_.back()->pc = target_pc;
+    } else {
+        call_stack_.back()->pc++;
     }
+
+    // 释放条件值引用
+    cond->del_ref();
 }
 
 // -------------------------- 异常处理 --------------------------
 void Vm::exec_THROW(const Instruction& instruction) {
     DEBUG_OUTPUT("exec throw...");
-    // 原逻辑未实现，保留break
+    // Todo
+    std::exit(4);
 }
 
 // -------------------------- 栈操作 --------------------------
@@ -126,6 +140,7 @@ void Vm::exec_SWAP(const Instruction& instruction) {
     op_stack_.push(b);
 }
 
+
 void Vm::exec_COPY_TOP(const Instruction& instruction) {
     DEBUG_OUTPUT("exec copy_top...");
     if (op_stack_.empty()) {
@@ -134,6 +149,11 @@ void Vm::exec_COPY_TOP(const Instruction& instruction) {
     model::Object* top = op_stack_.top();
     top->make_ref();
     op_stack_.emplace(top);
+}
+
+void Vm::exec_STOP(const Instruction& instruction) {
+    DEBUG_OUTPUT("exec stop...");
+    running_ = false;
 }
 
 }

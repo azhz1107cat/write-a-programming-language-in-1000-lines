@@ -42,7 +42,6 @@ class Vm {
     std::stack<model::Object *> op_stack_;
     std::vector<model::Object*> constant_pool_;
     std::vector<std::unique_ptr<CallFrame>> call_stack_;
-    size_t pc_ = 0;
     std::vector<Instruction> code_list_;
     bool running_ = false;
     deps::HashMap<model::Object*> builtins;
@@ -99,6 +98,7 @@ public:
     void exec_POP_TOP(const Instruction& instruction);
     void exec_SWAP(const Instruction& instruction);
     void exec_COPY_TOP(const Instruction& instruction);
+    void exec_STOP(const Instruction& instruction);
 };
 
 } // namespace kiz

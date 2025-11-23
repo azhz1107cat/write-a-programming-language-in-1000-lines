@@ -352,7 +352,7 @@ std::vector<Token> Lexer::tokenize(const std::string& src) {
         } else {
             util::ErrorInfo err = {
                 "SyntaxError",
-                "Unknown token '"+std::string(1, src[pos]) + "'",
+                "Unknown character '"+std::string(1, src[pos]) + "'",
                 1
             };
             util::error_reporter(file_path, lineno, lineno,

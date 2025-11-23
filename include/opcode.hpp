@@ -20,7 +20,7 @@ enum class Opcode {
     SET_GLOBAL, SET_LOCAL, SET_NONLOCAL,
     JUMP, JUMP_IF_FALSE, THROW, 
     MAKE_LIST, MAKE_DICT,
-    POP_TOP, SWAP, COPY_TOP
+    POP_TOP, SWAP, COPY_TOP, STOP
 };
 
 } // namespace kiz

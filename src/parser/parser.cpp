@@ -21,7 +21,7 @@
 namespace kiz {
 
 Token Parser::skip_token(const std::string& want_skip) {
-    DEBUG_OUTPUT("skipping token...");
+    // DEBUG_OUTPUT("skipping token...");
     if (curr_tok_idx_ < tokens_.size()) {
         const Token& curr_tok = tokens_.at(curr_tok_idx_);
         // 若指定了期望文本，校验当前Token是否匹配
@@ -41,7 +41,7 @@ Token Parser::skip_token(const std::string& want_skip) {
 
 // curr_token实现
 Token Parser::curr_token() const {
-    DEBUG_OUTPUT("getting current token...");
+    // DEBUG_OUTPUT("getting current token...");
     if (curr_tok_idx_ < tokens_.size()) {
         return tokens_.at(curr_tok_idx_);
     }
