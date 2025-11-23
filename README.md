@@ -5,7 +5,9 @@
 - 🪄 多范式兼容：支持OOP、FP等主流编程范式
 - 🔅 语法极简：关键字集高度精简，仅包含：
 ```kiz
-if else while break next fn end dict import try catch throw 
+if else while break next
+fn end dict import
+try catch throw 
 nonlocal global 
 is not or in and 
 True Nil False
