@@ -15,12 +15,19 @@ True Nil False
 - ✅ 规范友好：中文注释+统一命名规范
 - ✔️ 开发者友好：低门槛快速上手
 - 📃 TODO: 
-    - fix list的空指针问题
-    - fix 字典的定义
-    - fix user function的调用问题
-    - fix if, while stmt的跳转问题
-    - debug 测试注释
-    - debug&fix 测试set nonlocal和set global
-    - feature 所有报错使用util::err_reporter函数代替现在临时的assert
-    - feature 添加TraceBack
-    - feature 添加import, std模块系统(在model::std_modules中注册)和用户模块系统
+    - **fix** list的空指针问题
+    - **fix** 字典的定义与使用
+    - **fix** user function的调用问题
+    - **fix** if, while stmt的跳转问题
+    - **fix** 修复getattr setattr出现的空指针问题
+    - **fix** 修复Nil, False, True作为字面量出现的undefined var问题
+    - **debug&fix** 测试注释
+    - **debug&fix** 测试parser并在代码中为nullptr兜底
+    - **debug&fix** 测试set nonlocal和set global
+    - **feature** 所有报错使用util::err_reporter函数代替现在临时的assert
+    - **feature** 添加RuntimeError的TraceBack
+    - **feature(maybe has break change)** Object->to_string改为Object的魔术方法
+    - **feature** 添加import, 循环导入检查, std模块系统(在model::std_modules中注册)和用户模块系统
+    - **feature** 完善builtins object的magic_bool, magic_str魔术方法, 同时支持用户定义的魔术方法
+    - **feature** 完成 and not or in运算符
+    - **feature** 完成try-catch throw语句
