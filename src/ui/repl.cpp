@@ -37,12 +37,17 @@ void Repl::loop() {
 void Repl::eval_and_print(const std::string& cmd) {
     DEBUG_OUTPUT("repl eval_and_print...");
     const std::string file_path = "<shell#>";
+    bool should_print = false;
     kiz::Lexer lexer(file_path);
     kiz::Parser parser(file_path);
     kiz::IRGenerator ir_gen(file_path);
 
     const auto tokens = lexer.tokenize(cmd);
     auto ast = parser.parse(tokens);
+    if (ast->statements.size() > 0 and
+        dynamic_cast<kiz::ExprStmt*>(ast->statements.back().get())
+    )   should_print = true;
+
     const auto ir = ir_gen.gen(std::move(ast));
     if (cmd_history_.size() < 2) {
         vm_.load(ir);
@@ -54,7 +59,7 @@ void Repl::eval_and_print(const std::string& cmd) {
     DEBUG_OUTPUT("repl print");
     auto [stack_top, locals] = vm_.get_vm_state();
     if (stack_top != nullptr) {
-        if (not dynamic_cast<model::Nil*>(stack_top)) {
+        if (not dynamic_cast<model::Nil*>(stack_top) and should_print) {
             std::cout << stack_top->to_string() << std::endl;
         }
     }
