@@ -13,8 +13,7 @@
 #include <tuple>
 
 #include "kiz.hpp"
-#include "models.hpp"
-#include "../libs/builtins/builtins.hpp"
+#include "../libs/builtins/builtin_functions/builtin_functions.hpp"
 
 
 namespace kiz {
@@ -44,28 +43,20 @@ class Vm {
     std::vector<std::unique_ptr<CallFrame>> call_stack_;
     std::vector<Instruction> code_list_;
     bool running_ = false;
-    deps::HashMap<model::Object*> builtins;
-
     const std::string& file_path;
 public:
-    explicit Vm(const std::string& file_path) : file_path(file_path) {
-        DEBUG_OUTPUT("registering builtins...");
-        #define KIZ_FUNC(n) builtins.insert(#n, new model::CppFunction(builtin_objects::n))
-        KIZ_FUNC(print);
-        KIZ_FUNC(input);
-        KIZ_FUNC(isinstance);
-        #undef KIZ_FUNC
+    static deps::HashMap<model::Object*> builtins;
 
-        DEBUG_OUTPUT("registering magic methods...");
-        model::registering_magic_methods();
-    }
+    explicit Vm(const std::string& file_path);
 
     void load(model::Module* src_module);
     void extend_code(const model::CodeObject* code_object);
     VmState get_vm_state();
     void exec(const Instruction& instruction);
     std::tuple<model::Object*, model::Object*> fetch_two_from_stack_top(const std::string& curr_instruction_name);
-    static bool check_has_magic(const model::Object* a, const std::string& magic_method_name);
+    static model::Object* get_attr(const model::Object* obj, const std::string& attr);
+
+private:
     void exec_ADD(const Instruction& instruction);
     void exec_SUB(const Instruction& instruction);
     void exec_MUL(const Instruction& instruction);

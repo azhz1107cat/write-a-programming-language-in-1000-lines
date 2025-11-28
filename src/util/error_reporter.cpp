@@ -12,7 +12,7 @@
 #include <iostream>
 #include <string>
 
-#include "ui/color.hpp"
+#include "repl/color.hpp"
 
 namespace util {
 

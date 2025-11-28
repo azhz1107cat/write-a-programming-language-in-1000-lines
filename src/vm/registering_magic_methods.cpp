@@ -1,11 +1,5 @@
 #include "../../include/models.hpp"
-#include "../../include/models/bool_obj.hpp"
-#include "../../include/models/nil_obj.hpp"
-#include "../../include/models/int_obj.hpp"
-#include "../../include/models/rational_obj.hpp"
-#include "../../include/models/str_obj.hpp"
-#include "../../include/models/list_obj.hpp"
-#include "../../include/models/dict_obj.hpp"
+#include "../libs/builtins/builtin_methods/builtin_methods.hpp"
 
 namespace model {
 
@@ -21,7 +15,6 @@ Object* Object::magic_bool = nullptr;
 Object* Object::magic_eq = nullptr;
 Object* Object::magic_lt = nullptr;
 Object* Object::magic_gt = nullptr;
-deps::HashMap<Object*> Object::attrs = deps::HashMap<Object*>();
 
 // ========== Bool类静态成员定义 ==========
 Object* Bool::magic_eq = nullptr;

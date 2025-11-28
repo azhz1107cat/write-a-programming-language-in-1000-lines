@@ -18,6 +18,20 @@
 
 namespace kiz {
 
+deps::HashMap<model::Object*> Vm::builtins{};
+
+Vm::Vm(const std::string& file_path) : file_path(file_path) {
+    DEBUG_OUTPUT("registering builtins...");
+#define KIZ_FUNC(n) builtins.insert(#n, new model::CppFunction(builtin_objects::n))
+    KIZ_FUNC(print);
+    KIZ_FUNC(input);
+    KIZ_FUNC(isinstance);
+#undef KIZ_FUNC
+    builtins.insert("int", new model::Int());
+    DEBUG_OUTPUT("registering magic methods...");
+    model::registering_magic_methods();
+}
+
 void Vm::load(model::Module* src_module) {
     DEBUG_OUTPUT("loading module...");
     // 合法性校验：防止空指针访问
@@ -61,7 +75,7 @@ void Vm::load(model::Module* src_module) {
         const Instruction& curr_inst = frame_instructions[curr_frame.pc];
         // 调用已实现的exec执行单条指令
         this->exec(curr_inst);
-        DEBUG_OUTPUT("current stack top : " +
+                             DEBUG_OUTPUT("current stack top : " +
             (op_stack_.empty() ? " " : op_stack_.top()->to_string())
         );
         // 指令执行完成后，更新当前调用帧的pc（指向下一条指令）

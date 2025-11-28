@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "kiz.hpp"
-#include "ui/color.hpp"
+#include "repl/color.hpp"
 
 namespace kiz {
 

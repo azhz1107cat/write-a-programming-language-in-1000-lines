@@ -29,6 +29,7 @@ public:
 
     std::unique_ptr<BlockStmt> parse(const std::vector<Token>& tokens);
 
+private:
     // parse stmt
     std::unique_ptr<Statement> parse_stmt();
     std::unique_ptr<BlockStmt> parse_block();

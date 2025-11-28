@@ -4,6 +4,28 @@
 
 namespace kiz {
 
+model::Object* Vm::get_attr(const model::Object* obj, const std::string& attr_name) {
+    if (obj == nullptr) assert(false && ("GET_ATTR: 对象无此属性: "+attr_name).c_str());
+    const auto attr_it = obj->attrs.find(attr_name);
+    auto parent_it = obj->attrs.find("__parent__");
+    if (attr_it != nullptr) return attr_it->value;
+
+    if (parent_it != nullptr) return get_attr(parent_it->value, attr_name);
+
+    if (attr_name == "add")      return GET_MAGIC_METHOD(obj, add);
+    if (attr_name == "sub") return GET_MAGIC_METHOD(obj, sub);
+    if (attr_name == "mul") return GET_MAGIC_METHOD(obj, mul);
+    if (attr_name == "div") return GET_MAGIC_METHOD(obj, div);
+    if (attr_name == "mod") return GET_MAGIC_METHOD(obj, mod);
+    if (attr_name == "pow") return GET_MAGIC_METHOD(obj, pow);
+    if (attr_name == "in")  return GET_MAGIC_METHOD(obj, in);
+    if (attr_name == "eq")  return GET_MAGIC_METHOD(obj, eq);
+    if (attr_name == "lt")  return GET_MAGIC_METHOD(obj, lt);
+    if (attr_name == "gt")  return GET_MAGIC_METHOD(obj, gt);
+
+    assert(false && ("GET_ATTR: 对象无此属性: "+attr_name).c_str());
+}
+
 // -------------------------- 变量操作 --------------------------
 void Vm::exec_LOAD_VAR(const Instruction& instruction) {
     DEBUG_OUTPUT("exec load_var...");
@@ -155,11 +177,7 @@ void Vm::exec_SET_NONLOCAL(const Instruction& instruction) {
     }
     std::string attr_name = curr_frame->names[name_idx];
 
-    auto attr_it = obj->attrs.find(attr_name);
-    if (attr_it == nullptr) {
-        assert(false && "GET_ATTR: 对象无此属性");
-    }
-    model::Object* attr_val = attr_it->value;
+    model::Object* attr_val = get_attr(obj, attr_name);
     attr_val->make_ref();
     op_stack_.push(attr_val);
 }

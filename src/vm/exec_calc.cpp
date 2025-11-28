@@ -20,32 +20,6 @@ std::tuple<model::Object*, model::Object*> Vm::fetch_two_from_stack_top(
     return {a, b};
 }
 
-bool Vm::check_has_magic(const model::Object* a, const std::string& magic_method_name) {
-    if (a == nullptr) return false;
-
-    // 魔法方法名 : 成员变量的检查函数
-    static const std::unordered_map<std::string, std::function<bool(const model::Object*)>> magic_checkers = {
-        {"add", [](const auto* obj) { return obj->magic_add != nullptr; }},
-        {"sub", [](const auto* obj) { return obj->magic_sub != nullptr; }},
-        {"mul", [](const auto* obj) { return obj->magic_mul != nullptr; }},
-        {"div", [](const auto* obj) { return obj->magic_div != nullptr; }},
-        {"pow", [](const auto* obj) { return obj->magic_pow != nullptr; }},
-        {"mod", [](const auto* obj) { return obj->magic_mod != nullptr; }},
-        {"in",  [](const auto* obj) { return obj->magic_in != nullptr; }},
-        {"bool",[](const auto* obj) { return obj->magic_bool != nullptr; }},
-        {"eq",  [](const auto* obj) { return obj->magic_eq != nullptr; }},
-        {"lt",  [](const auto* obj) { return obj->magic_lt != nullptr; }},
-        {"gt",  [](const auto* obj) { return obj->magic_gt != nullptr; }}
-    };
-
-    const auto it = magic_checkers.find(magic_method_name);
-    if (it == magic_checkers.end()) {
-        assert(false && ("check_has_magic: 未知的魔法方法名：" + magic_method_name).data());
-    }
-
-    return it->second(a);
-}
-
 // -------------------------- 算术指令 --------------------------
 void Vm::exec_ADD(const Instruction& instruction) {
     const auto raw_call_stack_count = call_stack_.size();
@@ -53,7 +27,6 @@ void Vm::exec_ADD(const Instruction& instruction) {
     DEBUG_OUTPUT("exec add...");
     auto [a, b] = fetch_two_from_stack_top("add");
     DEBUG_OUTPUT("a is " + a->to_string() + ", b is " + b->to_string());
-    check_has_magic(a, "add");
 
     call_function(GET_MAGIC_METHOD(a, add), new model::List({b}), a);
     DEBUG_OUTPUT("success to call function");
@@ -69,7 +42,6 @@ void Vm::exec_SUB(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec sub...");
     auto [a, b] = fetch_two_from_stack_top("sub");
-    check_has_magic(a, "sub");
 
     call_function(GET_MAGIC_METHOD(a, sub), new model::List({b}), a);
 
@@ -83,7 +55,6 @@ void Vm::exec_MUL(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec mul...");
     auto [a, b] = fetch_two_from_stack_top("mul");
-    check_has_magic(a, "mul");
 
     call_function(GET_MAGIC_METHOD(a, mul), new model::List({b}), a);
 
@@ -97,7 +68,6 @@ void Vm::exec_DIV(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec div...");
     auto [a, b] = fetch_two_from_stack_top("div");
-    check_has_magic(a, "div");
 
     call_function(GET_MAGIC_METHOD(a, div), new model::List({b}), a);
 
@@ -111,7 +81,6 @@ void Vm::exec_MOD(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec mod...");
     auto [a, b] = fetch_two_from_stack_top("mod");
-    check_has_magic(a, "add");
 
     call_function(GET_MAGIC_METHOD(a, mod), new model::List({b}), a);
 
@@ -125,7 +94,6 @@ void Vm::exec_POW(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec pow...");
     auto [a, b] = fetch_two_from_stack_top("pow");
-    check_has_magic(a, "pow");
 
     call_function(GET_MAGIC_METHOD(a, pow), new model::List({b}), a);
 
@@ -157,7 +125,6 @@ void Vm::exec_EQ(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec eq...");
     auto [a, b] = fetch_two_from_stack_top("eq");
-    check_has_magic(a, "eq");
 
     call_function(GET_MAGIC_METHOD(a, eq), new model::List({b}), a);
 
@@ -171,7 +138,6 @@ void Vm::exec_GT(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec gt...");
     auto [a, b] = fetch_two_from_stack_top("gt");
-    check_has_magic(a, "gt");
 
     call_function(GET_MAGIC_METHOD(a, gt), new model::List({b}), a);
 
@@ -185,7 +151,6 @@ void Vm::exec_LT(const Instruction& instruction) {
 
     DEBUG_OUTPUT("exec lt...");
     auto [a, b] = fetch_two_from_stack_top("lt");
-    check_has_magic(a, "lt");
 
     call_function(GET_MAGIC_METHOD(a, lt), new model::List({b}), a);
 
@@ -226,7 +191,6 @@ void Vm::exec_IN(const Instruction& instruction) {
     const auto raw_call_stack_count = call_stack_.size();
     DEBUG_OUTPUT("exec in...");
     auto [a, b] = fetch_two_from_stack_top("in");
-    check_has_magic(a, "in");
 
     call_function(GET_MAGIC_METHOD(a, in), new model::List({b}), a);
 

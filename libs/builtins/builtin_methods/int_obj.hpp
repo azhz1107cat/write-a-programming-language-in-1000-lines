@@ -1,5 +1,6 @@
 #pragma once
 #include "models.hpp"
+#include "vm.hpp"
 
 namespace model {
 

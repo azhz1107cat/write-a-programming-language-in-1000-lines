@@ -1,12 +1,12 @@
 #pragma once
 #include <iostream>
-#include "ui/color.hpp"
+#include "repl/color.hpp"
 #include "version.hpp"
 
 // 调试模式开关
 #define IN_DEBUG
 
-//#undef IN_DEBUG
+#undef IN_DEBUG
 
 #ifdef IN_DEBUG
 #define DEBUG_OUTPUT(msg) \

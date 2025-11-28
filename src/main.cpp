@@ -8,7 +8,7 @@
  */
 
 #include "bigint.hpp"
-#include "ui/repl.hpp"
+#include "../include/repl/repl.hpp"
 #ifdef _WIN32
 #include <windows.h>
 #include <winnls.h>

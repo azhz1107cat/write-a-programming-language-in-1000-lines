@@ -6,14 +6,14 @@
  * @date 2025-10-25
  */
 
-#include "ui/repl.hpp"
+#include "repl/repl.hpp"
 
 #include "lexer.hpp"
 #include "vm.hpp"
 #include "ir_gen.hpp"
 #include "parser.hpp"
 #include "kiz.hpp"
-#include "ui/color.hpp"
+#include "repl/color.hpp"
 
 namespace ui {
 
@@ -65,4 +65,4 @@ void Repl::eval_and_print(const std::string& cmd) {
     }
 }
 
-} // namespace ui
+} // namespace repl

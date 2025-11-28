@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <unordered_set>
 
 #include "models.hpp"

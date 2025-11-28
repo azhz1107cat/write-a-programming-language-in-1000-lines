@@ -46,19 +46,10 @@
         } \
     }())
 
-// 检查魔法方法是否有效（避免空指针/类型错误）
-#define CHECK_MAGIC_METHOD_VALID(magic_ptr, method_name, obj_type_str) \
-    ([&]() -> bool { \
-        if (!magic_ptr) { \
-            DEBUG_OUTPUT("CHECK_MAGIC_METHOD_VALID: " #method_name " is nullptr for type: " + obj_type_str); \
-            return false; \
-        } \
-        if (magic_ptr->get_type() != model::Object::ObjectType::OT_CppFunction) { \
-            DEBUG_OUTPUT("CHECK_MAGIC_METHOD_VALID: " #method_name " is not CppFunction (type: " + magic_ptr->to_string() + ")"); \
-            return false; \
-        } \
-        return true; \
-    }())
+namespace kiz
+{
+    class Vm;
+}
 
 namespace kiz {
 
@@ -87,7 +78,7 @@ public:
     static Object* magic_eq;
     static Object* magic_lt;
     static Object* magic_gt;
-    static deps::HashMap<Object*> attrs;
+    deps::HashMap<Object*> attrs;
 
     // 对象类型枚举
     enum class ObjectType {
@@ -109,6 +100,7 @@ public:
             delete this;
         }
     }
+
     [[nodiscard]] virtual std::string to_string() const = 0;
     virtual ~Object() {
         auto kv_list = attrs.to_vector();
@@ -188,7 +180,7 @@ public:
 
 class CppFunction : public Object {
 public:
-    std::string name="";
+    std::string name;
     std::function<Object*(Object*, List*)> func;
 
     static constexpr ObjectType TYPE = ObjectType::OT_CppFunction;
