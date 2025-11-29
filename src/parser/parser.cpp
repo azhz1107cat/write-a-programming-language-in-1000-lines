@@ -112,6 +112,10 @@ std::unique_ptr<BlockStmt> Parser::parse(const std::vector<Token>& tokens) {
 
     // ========== 全局块解析：直到 EOF ==========
     while (curr_token().type != TokenType::EndOfFile) {
+        while(curr_token().type == TokenType::EndOfLine)
+        {
+            skip_end_of_ln();
+        }
         if (auto stmt = parse_stmt(); stmt != nullptr) {
             program_stmts.push_back(std::move(stmt));
         }
