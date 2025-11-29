@@ -236,7 +236,7 @@ void Vm::exec(const Instruction& instruction) {
         case Opcode::POP_TOP:         exec_POP_TOP(instruction);       break;
         case Opcode::SWAP:            exec_SWAP(instruction);          break;
         case Opcode::COPY_TOP:        exec_COPY_TOP(instruction);      break;
-        case Opcode::STOP: exec_STOP(instruction);           break;
+        case Opcode::STOP:            exec_STOP(instruction);           break;
         default:                      assert(false && "exec: 未知 opcode");
     }
 }
