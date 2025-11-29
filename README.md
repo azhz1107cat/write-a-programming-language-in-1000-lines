@@ -17,7 +17,7 @@ True Nil False
 - 📃 TODO: 
      - **fix** list的空指针问题
     - **fix** 字典的定义与使用
-    - **fix** --user function的调用问题-- (感谢三文鱼)
+    - **fix** ~~user function的调用问题~~ (感谢三文鱼)
     - **fix** if, while stmt的跳转问题
     - **fix** 修复getattr setattr出现的空指针问题
     - **fix** 修复Nil, False, True作为字面量出现的undefined var问题
