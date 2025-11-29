@@ -62,21 +62,8 @@ inline auto list_eq = [](Object* self, const List* args) -> Object* {
     for (size_t i = 0; i < self_list->val.size(); ++i) {
         Object* self_elem = self_list->val[i];
         Object* another_elem = another_list->val[i];
-        
-        // 元素类型匹配校验 + 值比较
-        if (auto self_int = dynamic_cast<Int*>(self_elem); self_int) {
-            auto another_int = dynamic_cast<Int*>(another_elem);
-            if (!another_int || self_int->val != another_int->val) return new Bool(false);
-        } else if (auto self_bool = dynamic_cast<Bool*>(self_elem); self_bool) {
-            auto another_bool = dynamic_cast<Bool*>(another_elem);
-            if (!another_bool || self_bool->val != another_bool->val) return new Bool(false);
-        } else if (auto self_nil = dynamic_cast<Nil*>(self_elem); self_nil) {
-            auto another_nil = dynamic_cast<Nil*>(another_elem);
-            if (!another_nil) return new Bool(false);
-        } else {
-            // 不支持的元素类型，直接视为不相等
-            return new Bool(false);
-        }
+
+        // todo : finish self_elem.magic_eq(another_elem)
     }
     
     return new Bool(true);

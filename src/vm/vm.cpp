@@ -21,13 +21,33 @@ namespace kiz {
 deps::HashMap<model::Object*> Vm::builtins{};
 
 Vm::Vm(const std::string& file_path) : file_path(file_path) {
-    DEBUG_OUTPUT("registering builtins...");
+    DEBUG_OUTPUT("registering builtin functions...");
 #define KIZ_FUNC(n) builtins.insert(#n, new model::CppFunction(builtin_objects::n))
     KIZ_FUNC(print);
     KIZ_FUNC(input);
     KIZ_FUNC(isinstance);
 #undef KIZ_FUNC
-    builtins.insert("int", new model::Int());
+
+    DEBUG_OUTPUT("registering builtin objects...");
+    builtins.insert("obj", model::based_obj);
+
+    model::based_bool->attrs.insert("__parent__", model::based_obj);
+    model::based_int->attrs.insert("__parent__", model::based_obj);
+    model::based_nil->attrs.insert("__parent__", model::based_obj);
+    model::based_rational->attrs.insert("__parent__", model::based_obj);
+    model::based_function->attrs.insert("__parent__", model::based_obj);
+    model::based_dict->attrs.insert("__parent__", model::based_obj);
+    model::based_list->attrs.insert("__parent__", model::based_obj);
+    model::based_str->attrs.insert("__parent__", model::based_obj);
+
+    builtins.insert("int", model::based_int);
+    builtins.insert("bool", model::based_bool);
+    builtins.insert("rational", model::based_rational);
+    builtins.insert("list", model::based_list);
+    builtins.insert("dict", model::based_dict);
+    builtins.insert("str", model::based_str);
+    builtins.insert("function", model::based_function);
+    builtins.insert("nil", model::based_nil);
     DEBUG_OUTPUT("registering magic methods...");
     model::registering_magic_methods();
 }

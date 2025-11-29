@@ -60,6 +60,12 @@ Object* Dictionary::magic_in = nullptr;
 
 // ========== 注册魔法方法 ==========
 void registering_magic_methods(){
+
+    Object::magic_eq = new CppFunction([](const Object* self, const List* args) -> Object* {
+        const auto other_obj = get_one_arg(args);
+        return new Bool(self == other_obj);
+    });
+
     Bool::magic_eq = new CppFunction(bool_eq);
     Nil::magic_eq = new CppFunction(nil_eq);
 

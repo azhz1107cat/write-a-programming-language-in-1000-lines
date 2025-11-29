@@ -55,6 +55,7 @@ public:
     void exec(const Instruction& instruction);
     std::tuple<model::Object*, model::Object*> fetch_two_from_stack_top(const std::string& curr_instruction_name);
     static model::Object* get_attr(const model::Object* obj, const std::string& attr);
+    void call_function(model::Object* func_obj, model::Object* args_obj, model::Object* self);
 
 private:
     void exec_ADD(const Instruction& instruction);
@@ -73,7 +74,6 @@ private:
     void exec_IS(const Instruction& instruction);
     void exec_IN(const Instruction& instruction);
     void exec_MAKE_LIST(const Instruction& instruction);
-    void call_function(model::Object* func_obj, model::Object* args_obj, model::Object* self);
     void exec_CALL(const Instruction& instruction);
     void exec_RET(const Instruction& instruction);
     void exec_GET_ATTR(const Instruction& instruction);

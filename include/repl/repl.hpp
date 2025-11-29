@@ -38,7 +38,7 @@ class Repl {
         const auto left = std::find_if_not(str.begin(), str.end(), [](unsigned char c) {
             return std::isspace(c);
         });
-        auto right = std::find_if_not(str.rbegin(), str.rend(), [](unsigned char c) {
+        const auto right = std::find_if_not(str.rbegin(), str.rend(), [](unsigned char c) {
             return std::isspace(c);
         }).base();
         return (left < right) ? std::string(left, right) : std::string();
