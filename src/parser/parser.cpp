@@ -21,22 +21,27 @@
 namespace kiz {
 
 Token Parser::skip_token(const std::string& want_skip) {
-    // DEBUG_OUTPUT("skipping token...");
-    if (curr_tok_idx_ < tokens_.size()) {
-        const Token& curr_tok = tokens_.at(curr_tok_idx_);
-        // 若指定了期望文本，校验当前Token是否匹配
-        if (!want_skip.empty() && curr_tok.text != want_skip) {
-            std::cerr << Color::RED
-                      << "[Syntax Error] Expected '" << want_skip << "', but got '"
-                      << curr_tok.text << "' (Line: " << curr_tok.lineno << ", Col: " << curr_tok.column << ")"
-                      << Color::RESET << std::endl;
-            assert(false && "Syntax mismatch in skip_token");
-        }
-        curr_tok_idx_++;  // 移动到下一个Token
+    DEBUG_OUTPUT("skipping token: index " + std::to_string(curr_tok_idx_));
+
+    // 边界检查：索引越界直接返回 EOF
+    if (curr_tok_idx_ >= tokens_.size()) {
+        DEBUG_OUTPUT("skip_token: 索引越界，返回 EOF");
+        return {TokenType::EndOfFile, "", 0, 0};
+    }
+
+    const Token& curr_tok = tokens_.at(curr_tok_idx_);
+    if (want_skip.empty()) {
+        curr_tok_idx_++;
         return curr_tok;
     }
-    // 到达Token列表末尾，返回EOF标记
-    return {TokenType::EndOfFile, "", 0, 0};
+
+    if (curr_tok.text == want_skip) {
+        curr_tok_idx_++;
+        return curr_tok;
+    }
+
+    // want_skip 非空但不匹配 → 仅警告，不推进索引（避免吞Token）
+    assert(false && "Syntax mismatch in skip_token");
 }
 
 // curr_token实现
@@ -89,16 +94,33 @@ void Parser::skip_start_of_block() {
 
 // parse_program实现（解析整个程序
 std::unique_ptr<BlockStmt> Parser::parse(const std::vector<Token>& tokens) {
-    tokens_ = tokens;    // 绑定Token列表
-    curr_tok_idx_ = 0;   // 初始化索引为0
+    tokens_ = tokens;
+    curr_tok_idx_ = 0;
     DEBUG_OUTPUT("parsing...");
     std::vector<std::unique_ptr<Statement>> program_stmts;
-    // 循环解析所有语句，直到EOF
+
+    // ========== 新增：打印所有 Token（关键调试） ==========
+    DEBUG_OUTPUT("=== 所有 Token 序列 ===");
+    for (size_t i = 0; i < tokens.size(); i++) {
+        const auto& tok = tokens[i];
+        DEBUG_OUTPUT(
+            "Token[" + std::to_string(i) + "]: type=" + std::to_string(static_cast<int>(tok.type))
+            + ", text='" + tok.text + "', line=" + std::to_string(tok.lineno)
+        );
+    }
+    DEBUG_OUTPUT("=== Token 序列结束 ===");
+
+    // ========== 全局块解析：直到 EOF ==========
     while (curr_token().type != TokenType::EndOfFile) {
         if (auto stmt = parse_stmt(); stmt != nullptr) {
             program_stmts.push_back(std::move(stmt));
         }
+        // 跳过语句后的换行/分号（容错）
+        if (curr_token().type == TokenType::EndOfLine || curr_token().type == TokenType::Semicolon) {
+            skip_token();
+        }
     }
+
     DEBUG_OUTPUT("end parsing");
     return std::make_unique<BlockStmt>(std::move(program_stmts));
 }

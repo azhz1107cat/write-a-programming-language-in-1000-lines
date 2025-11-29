@@ -52,6 +52,11 @@ model::Module* IRGenerator::gen(std::unique_ptr<BlockStmt> ast_into) {
     // 处理模块顶层节点
     gen_block(root_block);
 
+    DEBUG_OUTPUT("gen : ir result");
+    for (const auto& inst : curr_code_list) {
+        DEBUG_OUTPUT(opcode_to_string(inst.opc));
+    }
+
     return gen_mod(file_path,
         curr_names,
         curr_code_list,
@@ -68,6 +73,12 @@ model::CodeObject* IRGenerator::make_code_obj() const {
         obj->make_ref();
         consts.emplace_back(obj);
     }
+
+    DEBUG_OUTPUT("make code obj : ir result");
+    for (const auto& inst : curr_code_list) {
+        DEBUG_OUTPUT(opcode_to_string(inst.opc));
+    }
+
     const auto code_obj = new model::CodeObject(
         curr_code_list, consts, curr_names, curr_lineno_map
     );

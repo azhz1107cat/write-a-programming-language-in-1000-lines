@@ -67,7 +67,7 @@ void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::
         new_frame->name = func->name;
         new_frame->code_object = func->code;
         new_frame->pc = 0;
-        new_frame->return_to_pc = call_stack_.back()->pc;
+        new_frame->return_to_pc = call_stack_.back()->pc + 1;
         new_frame->names = func->code->names;
         new_frame->is_week_scope = false;
 
@@ -129,15 +129,24 @@ void Vm::exec_CALL(const Instruction& instruction) {
     model::Object* args_obj = op_stack_.top();
     op_stack_.pop();
 
+    DEBUG_OUTPUT("弹出函数对象: " + func_obj->to_string());
+    DEBUG_OUTPUT("弹出参数列表: " + args_obj->to_string());
+
     call_function(func_obj, args_obj);
 
 }
 
 void Vm::exec_RET(const Instruction& instruction) {
     DEBUG_OUTPUT("exec ret...");
+    // 兼容顶层调用帧返回
     if (call_stack_.size() < 2) {
-        assert(false && "RET: 无调用者（顶层调用帧无法返回）");
+        if (!op_stack_.empty()) {
+            op_stack_.pop(); // 清理栈顶返回值
+        }
+        call_stack_.pop_back(); // 弹出最后一个帧
+        return;
     }
+
     std::unique_ptr<CallFrame> curr_frame = std::move(call_stack_.back());
     call_stack_.pop_back();
     CallFrame* caller_frame = call_stack_.back().get();

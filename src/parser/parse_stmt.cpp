@@ -11,36 +11,39 @@
 
 namespace kiz {
 
-// parse_block
 std::unique_ptr<BlockStmt> Parser::parse_block() {
     DEBUG_OUTPUT("parsing block");
     std::vector<std::unique_ptr<Statement>> block_stmts;
-    // 循环解析块内语句，直到遇到end关键字（替代原RBrace）
+
     while (curr_tok_idx_ < tokens_.size()) {
         const Token& curr_tok = curr_token();
-        if (curr_tok.type == TokenType::EndOfFile) {
-            break;  // 遇到end，结束块解析
+
+        // 遇到 end 关键字 → 终止块解析
+        if (curr_tok.type == TokenType::End) {
+            break;
         }
+        // 遇到 EOF → 语法错误（块未结束）
+        if (curr_tok.type == TokenType::EndOfFile) {
+            std::cerr << Color::RED
+                      << "[Syntax Error] Block missing 'end' terminator (unexpected EOF)"
+                      << Color::RESET << std::endl;
+            assert(false && "Block not terminated with 'end'");
+        }
+
         // 解析单条语句并加入块
-        if (auto stmt = parse_stmt(); stmt != nullptr) {
+        if (auto stmt = parse_stmt()) {
             block_stmts.push_back(std::move(stmt));
         }
+
         // 跳过语句后的分号（若存在）
         if (curr_token().type == TokenType::Semicolon) {
             skip_token(";");
         }
     }
-    // 校验块结束符是否为end（防止提前EOF）
-    const Token& end_tok = curr_token();
-    if (end_tok.type != TokenType::EndOfFile) {
-        // std::cerr << Color::RED
-        //           << "[Syntax Error] Block must end with 'end', got '"
-        //           << end_tok.text << "' (Line: " << end_tok.line << ", Col: " << end_tok.col << ")"
-        //           << Color::RESET << std::endl;
-        // assert(false && "Block missing 'end' terminator");
-    }
-    // 跳过end关键字，完成块解析
+
+    // 跳过 end 关键字
     skip_token("end");
+
     return std::make_unique<BlockStmt>(std::move(block_stmts));
 }
 

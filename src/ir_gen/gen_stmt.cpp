@@ -203,20 +203,20 @@ void IRGenerator::gen_fn_decl(FnDeclExpr* fn_decl) {
     curr_consts = save_const;
     curr_lineno_map = save_lineno;
 
-    // 将函数对象加入模块常量池并存储为全局变量
+    // 将函数对象加入模块常量池并存储为变量
     size_t fn_const_idx = get_or_add_const(curr_consts, fn);
     size_t fn_name_idx = get_or_add_name(curr_names, fn_decl->name);
 
-    // 加载函数对象 + 存储为全局变量
+    // 加载函数对象 + 存储为变量
     curr_code_list.emplace_back(
         Opcode::LOAD_CONST,
-        std::vector<size_t>{fn_const_idx},
+        std::vector{fn_const_idx},
         fn_decl->start_ln,
         fn_decl->start_ln
     );
     curr_code_list.emplace_back(
         Opcode::SET_LOCAL,
-        std::vector<size_t>{fn_name_idx},
+        std::vector{fn_name_idx},
         fn_decl->start_ln,
         fn_decl->end_ln
     );

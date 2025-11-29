@@ -79,13 +79,15 @@ void IRGenerator::gen_expr(Expression* expr) {
             break;
         }
         case AstType::CallExpr:
+            DEBUG_OUTPUT("gen fn call...");
             gen_fn_call(dynamic_cast<CallExpr*>(expr));
             break;
         case AstType::DictDeclExpr:
             gen_dict(dynamic_cast<DictDeclExpr*>(expr));
             break;
         case AstType::ListExpr: {
-
+            // todo: finish make list
+            break;
         }
         case AstType::GetMemberExpr: {
             // 获取成员：生成对象表达式 -> 加载属性名 -> GET_ATTR指令

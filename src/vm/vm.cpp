@@ -85,28 +85,39 @@ void Vm::load(model::Module* src_module) {
     // 初始化VM执行状态：标记为"就绪"
     this->running_ = true; // 标记VM为运行状态（等待exec触发执行）
     assert(!this->call_stack_.empty() && "Vm::load: 调用栈为空，无法执行指令");
-    auto& curr_frame = *this->call_stack_.back(); // 获取当前模块的调用帧（栈顶）
-    assert(curr_frame.code_object != nullptr && "Vm::load: 当前调用帧无关联CodeObject");
+    auto& module_frame = *this->call_stack_.back(); // 获取当前模块的调用帧（栈顶）
+    assert(module_frame.code_object != nullptr && "Vm::load: 当前调用帧无关联CodeObject");
 
-    // 循环执行当前调用帧下的所有指令（依赖已实现的exec单条指令逻辑）
-    const std::vector<Instruction>& frame_instructions = curr_frame.code_object->code;
-    while (curr_frame.pc < frame_instructions.size()) {
-        // 获取当前要执行的指令（用调用帧的pc索引，确保上下文正确）
-        const Instruction& curr_inst = frame_instructions[curr_frame.pc];
-        // 调用已实现的exec执行单条指令
+    // 循环执行当前调用帧下的所有指令
+    while (!call_stack_.empty() && running_) {
+        auto& curr_frame = *call_stack_.back();
+        // 检查当前帧是否执行完毕
+        if (curr_frame.pc >= curr_frame.code_object->code.size()) {
+            // 非模块帧则弹出，模块帧则退出循环
+            if (call_stack_.size() > 1) {
+                call_stack_.pop_back();
+            } else {
+                break;
+            }
+            continue;
+        }
+
+        // 执行当前指令
+        const Instruction& curr_inst = curr_frame.code_object->code[curr_frame.pc];
         this->exec(curr_inst);
-                             DEBUG_OUTPUT("current stack top : " +
+        DEBUG_OUTPUT("curr inst is "+opcode_to_string(curr_inst.opc));
+
+        // 调试输出栈顶
+        DEBUG_OUTPUT("current stack top : " +
             (op_stack_.empty() ? " " : op_stack_.top()->to_string())
         );
-        // 指令执行完成后，更新当前调用帧的pc（指向下一条指令）
-        if (not (
-           curr_inst.opc == Opcode::JUMP or
-           curr_inst.opc == Opcode::JUMP_IF_FALSE or
-           curr_inst.opc == Opcode::RET
-        )){
+
+        // PC自增
+        if (!(curr_inst.opc == Opcode::JUMP || curr_inst.opc == Opcode::JUMP_IF_FALSE || curr_inst.opc == Opcode::RET)) {
             curr_frame.pc++;
         }
     }
+
     DEBUG_OUTPUT("call stack length: " + std::to_string(this->call_stack_.size()));
 }
 
