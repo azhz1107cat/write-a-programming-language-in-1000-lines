@@ -57,7 +57,7 @@ inline auto input = [](model::Object* self, const model::List* args) -> model::O
 };
 
 inline auto isinstance = [](model::Object* self, const model::List* args) -> model::Object* {
-    if (!args->val.size() == 2) {
+    if (!(args->val.size() == 2)) {
         assert(false && "函数参数不足两个");
     }
 
