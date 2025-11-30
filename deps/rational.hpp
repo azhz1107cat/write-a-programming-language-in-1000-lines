@@ -32,10 +32,6 @@ public:
         reduce(); // 构造时立即约分并规范符号
     }
 
-    // 访问接口（只读，防止外部修改分子分母）
-    [[nodiscard]] const BigInt& getNumerator() const { return numerator; }
-    [[nodiscard]] const BigInt& getDenominator() const { return denominator; }
-
     // 核心运算符重载（基于 BigInt 已重载的 +-*%）
     // 赋值运算符
     Rational& operator=(const Rational& rhs) {
