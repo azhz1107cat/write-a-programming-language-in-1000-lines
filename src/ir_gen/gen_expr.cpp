@@ -177,7 +177,7 @@ void IRGenerator::gen_expr(Expression* expr) {
             const size_t fn_const_idx = get_or_add_const(curr_consts, lambda_fn);
             curr_code_list.emplace_back(
                 Opcode::LOAD_CONST,
-                std::vector<size_t>{fn_const_idx},
+                std::vector{fn_const_idx},
                 expr->start_ln,
                 expr->end_ln
             );

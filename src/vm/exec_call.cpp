@@ -62,6 +62,8 @@ void Vm::call_function(model::Object* func_obj, model::Object* args_obj, model::
                             "个，实际" + std::to_string(actual_argc) + "个）").c_str());
         }
 
+        constant_pool_ = func->code->consts;
+
         // 创建新调用帧
         auto new_frame = std::make_unique<CallFrame>();
         new_frame->name = func->name;
@@ -149,6 +151,7 @@ void Vm::exec_RET(const Instruction& instruction) {
 
     std::unique_ptr<CallFrame> curr_frame = std::move(call_stack_.back());
     call_stack_.pop_back();
+
     CallFrame* caller_frame = call_stack_.back().get();
 
     model::Object* return_val = new model::Nil();
@@ -159,6 +162,8 @@ void Vm::exec_RET(const Instruction& instruction) {
         op_stack_.pop();
         return_val->make_ref();
     }
+
+    constant_pool_ = caller_frame->code_object->consts;
 
     caller_frame->pc = curr_frame->return_to_pc;
     op_stack_.push(return_val);

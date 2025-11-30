@@ -156,7 +156,7 @@ std::unique_ptr<Statement> Parser::parse_stmt() {
         auto func_body = parse_block();  // 函数体为非全局作用域
 
         // 生成函数定义语句节点
-        return std::make_unique<ExprStmt>(std::make_unique<FnDeclExpr>(
+        return std::make_unique<AssignStmt>(func_name, std::make_unique<FnDeclExpr>(
             func_name,
             std::move(func_params),
             std::move(func_body)
