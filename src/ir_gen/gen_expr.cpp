@@ -86,7 +86,17 @@ void IRGenerator::gen_expr(Expression* expr) {
             gen_dict(dynamic_cast<DictDeclExpr*>(expr));
             break;
         case AstType::ListExpr: {
-            // todo: finish make list
+            auto list_expr = dynamic_cast<ListExpr*>(expr);
+            for (const auto e: list_expr->elements) {
+                gen_expr(e);
+            }
+            // 生成 OP_MAKE_LIST 指令
+            curr_code_list.emplace_back(
+                Opcode::MAKE_LIST,
+                std::vector{list_expr->elements.size()},
+                expr->start_ln,
+                expr->end_ln
+           );
             break;
         }
         case AstType::GetMemberExpr: {
