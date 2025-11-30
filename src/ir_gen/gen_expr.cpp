@@ -87,8 +87,8 @@ void IRGenerator::gen_expr(Expression* expr) {
             break;
         case AstType::ListExpr: {
             auto list_expr = dynamic_cast<ListExpr*>(expr);
-            for (const auto e: list_expr->elements) {
-                gen_expr(e);
+            for (const auto& e: list_expr->elements) {
+                gen_expr(e.get());
             }
             // 生成 OP_MAKE_LIST 指令
             curr_code_list.emplace_back(
