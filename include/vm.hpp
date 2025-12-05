@@ -37,26 +37,25 @@ struct CallFrame {
 };
 
 class Vm {
-    deps::HashMap<model::Module*> loaded_modules;
-    model::Module* main_module;
-    std::stack<model::Object *> op_stack_;
-    std::vector<model::Object*> constant_pool_;
-    std::vector<std::unique_ptr<CallFrame>> call_stack_;
-    std::vector<Instruction> code_list_;
-    bool running_ = false;
-    const std::string& file_path;
+    static deps::HashMap<model::Module*> loaded_modules;
+    static model::Module* main_module;
+    static std::stack<model::Object *> op_stack_;
+    static std::vector<std::unique_ptr<CallFrame>> call_stack_;
+    static bool running_;
+    static const std::string& file_path;
 public:
     static deps::HashMap<model::Object*> builtins;
 
     explicit Vm(const std::string& file_path);
+    ~Vm();
 
-    void load(model::Module* src_module);
-    void extend_code(const model::CodeObject* code_object);
-    VmState get_vm_state();
-    void exec(const Instruction& instruction);
-    std::tuple<model::Object*, model::Object*> fetch_two_from_stack_top(const std::string& curr_instruction_name);
+    static void load(model::Module* src_module);
+    static void extend_code(const model::CodeObject* code_object);
+    static VmState get_vm_state();
+    static void exec(const Instruction& instruction);
+    static std::tuple<model::Object*, model::Object*> fetch_two_from_stack_top(const std::string& curr_instruction_name);
     static model::Object* get_attr(const model::Object* obj, const std::string& attr);
-    void call_function(model::Object* func_obj, model::Object* args_obj, model::Object* self);
+    static void call_function(model::Object* func_obj, model::Object* args_obj, model::Object* self);
 
 private:
     void exec_ADD(const Instruction& instruction);
@@ -79,6 +78,7 @@ private:
     void exec_RET(const Instruction& instruction);
     void exec_GET_ATTR(const Instruction& instruction);
     void exec_SET_ATTR(const Instruction& instruction);
+    void exec_CALL_METHOD(const Instruction& instruction);
     void exec_LOAD_VAR(const Instruction& instruction);
     void exec_LOAD_CONST(const Instruction& instruction);
     void exec_SET_GLOBAL(const Instruction& instruction);
