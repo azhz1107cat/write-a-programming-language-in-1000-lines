@@ -16,7 +16,7 @@ enum class Opcode {
     OP_AND, OP_NOT, OP_OR,
     OP_IS, OP_IN,
     CALL, RET,
-    GET_ATTR, SET_ATTR,
+    GET_ATTR, SET_ATTR, CALL_METHOD,
     LOAD_VAR, LOAD_CONST,
     SET_GLOBAL, SET_LOCAL, SET_NONLOCAL,
     JUMP, JUMP_IF_FALSE, THROW, 
@@ -54,6 +54,7 @@ inline std::string opcode_to_string(Opcode opc) {
         // 属性操作
         case Opcode::GET_ATTR:    return "GET_ATTR";
         case Opcode::SET_ATTR:    return "SET_ATTR";
+        case Opcode::CALL_METHOD: return "CALL_METHOD";
 
         // 变量加载/存储
         case Opcode::LOAD_VAR:    return "LOAD_VAR";
