@@ -18,37 +18,6 @@
 #include "../deps/bigint.hpp"
 #include "../deps/rational.hpp"
 
-
-// 获取对象的魔法方法（参数：对象指针、魔法方法名，如add/mul/eq）
-#define GET_MAGIC_METHOD(obj_ptr, method_name) \
-    ([&]() -> model::Object* { \
-        if (!obj_ptr) { \
-            DEBUG_OUTPUT("GET_MAGIC_METHOD: obj_ptr is nullptr"); \
-            return nullptr; \
-        } \
-        switch (obj_ptr->get_type()) { \
-            case model::Object::ObjectType::OT_Object: \
-                return model::Object::magic_##method_name;\
-            case model::Object::ObjectType::OT_Int: \
-                return model::Int::magic_##method_name; \
-            case model::Object::ObjectType::OT_String: \
-                return model::String::magic_##method_name; \
-            case model::Object::ObjectType::OT_List: \
-                return model::List::magic_##method_name; \
-            case model::Object::ObjectType::OT_Rational: \
-                return model::Rational::magic_##method_name; \
-            case model::Object::ObjectType::OT_Dictionary: \
-                return model::Dictionary::magic_##method_name; \
-            case model::Object::ObjectType::OT_Bool: \
-                return model::Bool::magic_##method_name; \
-            case model::Object::ObjectType::OT_Nil: \
-                return model::Nil::magic_##method_name; \
-            default: \
-                DEBUG_OUTPUT("GET_MAGIC_METHOD: unsupported type for " #method_name " (type: " + obj_ptr->to_string() + ")"); \
-                return nullptr; \
-        } \
-    }())
-
 namespace kiz {
 
 class Vm;
@@ -63,7 +32,6 @@ struct Instruction {
 }
 
 namespace model {
-
 
 // 工具函数ptr转为地址的字符串
 template <typename T>
@@ -83,17 +51,6 @@ std::string ptr_to_string(T* m) {
 class Object {
     std::atomic<size_t> refc_ = 0;
 public:
-    static Object* magic_add;
-    static Object* magic_sub;
-    static Object* magic_mul;
-    static Object* magic_div;
-    static Object* magic_pow;
-    static Object* magic_mod;
-    static Object* magic_in;
-    static Object* magic_bool;
-    static Object* magic_eq;
-    static Object* magic_lt;
-    static Object* magic_gt;
     deps::HashMap<Object*> attrs;
 
     // 对象类型枚举
@@ -234,11 +191,6 @@ class List : public Object {
 public:
     std::vector<Object*> val;
 
-    static Object* magic_add;
-    static Object* magic_mul;
-    static Object* magic_in;
-    static Object* magic_eq;
-
     static constexpr ObjectType TYPE = ObjectType::OT_List;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -266,17 +218,6 @@ class Int : public Object {
 public:
     deps::BigInt val;
 
-    static Object* magic_add;
-    static Object* magic_sub;
-    static Object* magic_mul;
-    static Object* magic_div;
-    static Object* magic_pow;
-    static Object* magic_mod;
-    static Object* magic_bool;
-    static Object* magic_eq;
-    static Object* magic_lt;
-    static Object* magic_gt;
-
     static constexpr ObjectType TYPE = ObjectType::OT_Int;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -295,14 +236,6 @@ class Rational : public Object {
 public:
     deps::Rational val;
 
-    static Object* magic_add;
-    static Object* magic_sub;
-    static Object* magic_mul;
-    static Object* magic_div;
-    static Object* magic_eq;
-    static Object* magic_lt;
-    static Object* magic_gt;
-
     static constexpr ObjectType TYPE = ObjectType::OT_Rational;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -318,11 +251,6 @@ class String : public Object {
 public:
     std::string val;
 
-    static Object* magic_add;
-    static Object* magic_mul;
-    static Object* magic_in;
-    static Object* magic_eq;
-
     static constexpr ObjectType TYPE = ObjectType::OT_String;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -336,8 +264,6 @@ public:
 
 class Dictionary : public Object {
 public:
-    static Object* magic_add;
-    static Object* magic_in;
 
     static constexpr ObjectType TYPE = ObjectType::OT_Dictionary;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
@@ -373,8 +299,6 @@ class Bool : public Object {
 public:
     bool val;
 
-    static Object* magic_eq;
-
     static constexpr ObjectType TYPE = ObjectType::OT_Bool;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
 
@@ -388,7 +312,6 @@ public:
 
 class Nil : public Object {
 public:
-    static Object* magic_eq;
 
     static constexpr ObjectType TYPE = ObjectType::OT_Nil;
     [[nodiscard]] ObjectType get_type() const override { return TYPE; }
@@ -403,7 +326,6 @@ public:
 
 inline deps::HashMap<Object*> std_modules;
 
-void registering_magic_methods();
 void registering_std_modules();
 
 };
