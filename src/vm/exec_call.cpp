@@ -138,6 +138,30 @@ void Vm::exec_CALL(const Instruction& instruction) {
 
 }
 
+void Vm::exec_CALL_METHOD(const Instruction& instruction) {
+    DEBUG_OUTPUT("exec call method...");
+
+    // 弹出栈顶元素 : 源对象
+    auto obj = op_stack_.top();
+    op_stack_.pop();
+    obj->make_ref();
+
+    // 弹出栈顶-1元素 : 参数列表
+    model::Object* args_obj = op_stack_.top();
+    op_stack_.pop();
+
+    DEBUG_OUTPUT("弹出对象: " + obj->to_string());
+    DEBUG_OUTPUT("弹出参数列表: " + args_obj->to_string());
+
+    auto func_obj = get_attr(obj, instruction[0]);
+    func_obj->make_ref();
+
+    DEBUG_OUTPUT("获取函数对象: " + func_obj->to_string());
+
+    call_function(func_obj, args_obj, obj);
+
+}
+
 void Vm::exec_RET(const Instruction& instruction) {
     DEBUG_OUTPUT("exec ret...");
     // 兼容顶层调用帧返回
