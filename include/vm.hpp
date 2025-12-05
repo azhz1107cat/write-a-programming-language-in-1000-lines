@@ -37,7 +37,8 @@ struct CallFrame {
 };
 
 class Vm {
-    // deps::HashMap<model::Module*> loaded_modules;
+    deps::HashMap<model::Module*> loaded_modules;
+    model::Module* main_module;
     std::stack<model::Object *> op_stack_;
     std::vector<model::Object*> constant_pool_;
     std::vector<std::unique_ptr<CallFrame>> call_stack_;
