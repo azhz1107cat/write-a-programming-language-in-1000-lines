@@ -40,6 +40,55 @@ Vm::Vm(const std::string& file_path) : file_path(file_path) {
     model::based_list->attrs.insert("__parent__", model::based_obj);
     model::based_str->attrs.insert("__parent__", model::based_obj);
 
+    DEBUG_OUTPUT("registering magic methods...");
+    // Object 基类 __eq__
+    based_obj->attrs.insert("__eq__", new CppFunction([](const Object* self, const List* args) -> Object* {
+        const auto other_obj = get_one_arg(args);
+        return new Bool(self == other_obj);
+    }));
+
+    // Bool 类型魔法方法
+    based_bool->attrs.insert("__eq__", new CppFunction(bool_eq));
+
+    // Nil 类型魔法方法
+    based_nil->attrs.insert("__eq__", new CppFunction(nil_eq));
+
+    // Int 类型魔法方法
+    based_int->attrs.insert("__add__", new CppFunction(int_add));
+    based_int->attrs.insert("__sub__", new CppFunction(int_sub));
+    based_int->attrs.insert("__mul__", new CppFunction(int_mul));
+    based_int->attrs.insert("__div__", new CppFunction(int_div));
+    based_int->attrs.insert("__mod__", new CppFunction(int_mod));
+    based_int->attrs.insert("__pow__", new CppFunction(int_pow));
+    based_int->attrs.insert("__gt__", new CppFunction(int_gt));
+    based_int->attrs.insert("__lt__", new CppFunction(int_lt));
+    based_int->attrs.insert("__eq__", new CppFunction(int_eq));
+
+    // Rational 类型魔法方法
+    based_rational->attrs.insert("__add__", new CppFunction(rational_add));
+    based_rational->attrs.insert("__sub__", new CppFunction(rational_sub));
+    based_rational->attrs.insert("__mul__", new CppFunction(rational_mul));
+    based_rational->attrs.insert("__div__", new CppFunction(rational_div));
+    based_rational->attrs.insert("__gt__", new CppFunction(rational_gt));
+    based_rational->attrs.insert("__lt__", new CppFunction(rational_lt));
+    based_rational->attrs.insert("__eq__", new CppFunction(rational_eq));
+
+    // Dictionary 类型魔法方法
+    based_dict->attrs.insert("__add__", new CppFunction(dict_add));
+    based_dict->attrs.insert("__contains__", new CppFunction(dict_contains));
+
+    // List 类型魔法方法
+    based_list->attrs.insert("__add__", new CppFunction(list_add));
+    based_list->attrs.insert("__mul__", new CppFunction(list_mul));
+    based_list->attrs.insert("__contains__", new CppFunction(list_contains));
+    based_list->attrs.insert("__eq__", new CppFunction(list_eq));
+
+    // String 类型魔法方法
+    based_str->attrs.insert("__add__", new CppFunction(str_add));
+    based_str->attrs.insert("__mul__", new CppFunction(str_mul));
+    based_str->attrs.insert("__contains__", new CppFunction(str_contains));
+    based_str->attrs.insert("__eq__", new CppFunction(str_eq));
+
     builtins.insert("int", model::based_int);
     builtins.insert("bool", model::based_bool);
     builtins.insert("rational", model::based_rational);
@@ -48,8 +97,6 @@ Vm::Vm(const std::string& file_path) : file_path(file_path) {
     builtins.insert("str", model::based_str);
     builtins.insert("function", model::based_function);
     builtins.insert("nil", model::based_nil);
-    DEBUG_OUTPUT("registering magic methods...");
-    model::registering_magic_methods();
 }
 
 void Vm::load(model::Module* src_module) {
