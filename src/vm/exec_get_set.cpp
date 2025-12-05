@@ -11,18 +11,7 @@ model::Object* Vm::get_attr(const model::Object* obj, const std::string& attr_na
     if (attr_it != nullptr) return attr_it->value;
 
     if (parent_it != nullptr) return get_attr(parent_it->value, attr_name);
-
-    if (attr_name == "add")      return GET_MAGIC_METHOD(obj, add);
-    if (attr_name == "sub") return GET_MAGIC_METHOD(obj, sub);
-    if (attr_name == "mul") return GET_MAGIC_METHOD(obj, mul);
-    if (attr_name == "div") return GET_MAGIC_METHOD(obj, div);
-    if (attr_name == "mod") return GET_MAGIC_METHOD(obj, mod);
-    if (attr_name == "pow") return GET_MAGIC_METHOD(obj, pow);
-    if (attr_name == "in")  return GET_MAGIC_METHOD(obj, in);
-    if (attr_name == "eq")  return GET_MAGIC_METHOD(obj, eq);
-    if (attr_name == "lt")  return GET_MAGIC_METHOD(obj, lt);
-    if (attr_name == "gt")  return GET_MAGIC_METHOD(obj, gt);
-
+    
     assert(false && ("GET_ATTR: 对象无此属性: "+attr_name).c_str());
 }
 
@@ -161,8 +150,8 @@ void Vm::exec_SET_NONLOCAL(const Instruction& instruction) {
     target_frame->locals.insert(var_name, var_val);
 }
 
-    // -------------------------- 属性访问 --------------------------
-    void Vm::exec_GET_ATTR(const Instruction& instruction) {
+// -------------------------- 属性访问 --------------------------
+void Vm::exec_GET_ATTR(const Instruction& instruction) {
     DEBUG_OUTPUT("exec get_attr...");
     if (op_stack_.empty() || instruction.opn_list.empty()) {
         assert(false && "GET_ATTR: 操作数栈为空或无属性名索引");
@@ -182,7 +171,7 @@ void Vm::exec_SET_NONLOCAL(const Instruction& instruction) {
     op_stack_.push(attr_val);
 }
 
-    void Vm::exec_SET_ATTR(const Instruction& instruction) {
+void Vm::exec_SET_ATTR(const Instruction& instruction) {
     DEBUG_OUTPUT("exec set_attr...");
     if (op_stack_.size() < 2 || instruction.opn_list.empty()) {
         assert(false && "SET_ATTR: 操作数栈元素不足或无属性名索引");
