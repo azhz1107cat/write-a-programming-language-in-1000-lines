@@ -110,16 +110,11 @@ void Vm::load(model::Module* src_module) {
     // 合法性校验：防止空指针访问
     assert(src_module != nullptr && "Vm::run_module: 传入的src_module不能为nullptr");
     assert(src_module->code != nullptr && "Vm::run_module: 模块的CodeObject未初始化（code为nullptr）");
-    // 加载指令列表：将模块CodeObject中的指令复制到VM的执行指令池
-    this->code_list_ = src_module->code->code;
+    // 注册为main module
+    main_module = src_module;
 
     // 加载常量池：处理引用计数，避免常量对象被提前释放
     const std::vector<model::Object*>& module_consts = src_module->code->consts;
-    for (model::Object* const_obj : module_consts) {
-        assert(const_obj != nullptr && "Vm::load: 常量池中有nullptr对象，非法");
-        const_obj->make_ref(); // 增加引用计数（VM持有常量的引用）
-        this->constant_pool_.push_back(const_obj);
-    }
 
     // 创建模块级调用帧（CallFrame）：模块是顶层执行单元，对应一个顶层调用帧
     auto module_call_frame = std::make_unique<CallFrame>();
@@ -194,27 +189,6 @@ void Vm::extend_code(const model::CodeObject* code_object) {
             old_const->del_ref();
         }
     }
-    // 清空 VM 同步常量池
-    const auto prev_const_count =this->constant_pool_.size();
-    this->constant_pool_.clear();
-    // 清空全局常量池，用新 code_object 的常量池覆盖（添加引用计数）
-    global_code_obj.consts.clear();
-    for (model::Object* new_const : code_object->consts) {
-        if (new_const == nullptr) {
-            assert(false && "extend_code: 新常量池中有 nullptr");
-            global_code_obj.consts.push_back(nullptr);
-            continue;
-        }
-        new_const->make_ref(); // 全局 CodeObject 持有该常量，引用计数+1
-        global_code_obj.consts.push_back(new_const);
-        this->constant_pool_.push_back(new_const); // VM 常量池同步覆盖
-    }
-    DEBUG_OUTPUT("extend_code: 覆盖常量池：原有 "
-        + std::to_string(prev_const_count)
-        + " 个 → 新 "
-        + std::to_string(global_code_obj.consts.size())
-        + " 个"
-    );
 
     // ========== 覆盖：名称表 ==========
     const size_t prev_name_count = global_code_obj.names.size();
@@ -271,6 +245,10 @@ void Vm::extend_code(const model::CodeObject* code_object) {
             new_const->del_ref();
         }
     }
+}
+
+void Vm::load_required_modules(deps::HashMap<model::Object*> modules) {
+    loaded_modules = modules;
 }
 
 VmState Vm::get_vm_state() {
