@@ -19,6 +19,12 @@
 namespace kiz {
 
 deps::HashMap<model::Object*> Vm::builtins{};
+deps::HashMap<model::Module*> Vm::loaded_modules{};
+model::Module* Vm::main_module;
+std::stack<model::Object *> Vm::op_stack_{};
+std::vector<std::unique_ptr<CallFrame>> Vm::call_stack_{};
+bool Vm::running_ = false;
+const std::string& Vm::file_path = "";
 
 Vm::Vm(const std::string& file_path) : file_path(file_path) {
     DEBUG_OUTPUT("registering builtin functions...");
