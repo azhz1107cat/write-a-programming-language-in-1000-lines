@@ -4,9 +4,9 @@
 
 namespace math_lib {
 
-auto pi = new model::Rational(deps::Rational(3.14159));
+inline auto pi = new model::Rational(deps::Rational(3.14159));
 
-auto __init_module__ = [](model::Object* self, const model::List* args) -> model::Object* {
+inline auto __init_module__ = [](model::Object* self, const model::List* args) -> model::Object* {
     auto mod = new model::Module(
         "math",
         nullptr
