@@ -20,7 +20,7 @@ True Nil False
     - ~~**fix** user function的调用问题~~ (感谢三文鱼)
     - **fix** if, while stmt的跳转问题
     - ~~**feature** 实现getattr~~
-    - **feature** 实现setattr
+    - ~~**feature** 实现setattr~~
     - **fix** 修复Nil, False, True作为字面量出现的undefined var问题
     - **fix** 统一报错和DEBUG信息和输出信息为标准英文
     - **debug&fix** 测试注释
